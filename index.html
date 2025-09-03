@@ -10,6 +10,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- QR Code generation library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- PDF generation library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -36,6 +38,8 @@
         #qrcode-container canvas {
             display: block;
             margin: auto;
+            max-width: 100%; /* Ensures the QR code scales down on smaller screens */
+            height: auto !important; /* Maintains aspect ratio */
         }
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
@@ -44,6 +48,22 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .animated-gradient-btn {
+            background: linear-gradient(-45deg, #ff7e5f, #feb47b, #86A8E7, #91EAE4);
+            background-size: 400% 400%;
+            animation: gradient-flow 10s ease infinite;
+            transition: filter 0.3s ease;
+        }
+        .animated-gradient-btn:hover {
+            filter: brightness(1.1);
+        }
+        @keyframes gradient-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
 
         /* Light Theme */
         body.theme-light { background-color: #ffffff; }
@@ -54,6 +74,9 @@
         .theme-light .input::placeholder { color: #a0aec0; }
         .theme-light .social-icon { color: #4a5568; }
         .theme-light .social-icon.github:hover { color: #000000; }
+        .theme-light .download-menu { background-color: #ffffff; color: #374151;}
+        .theme-light .download-menu a:hover { background-color: #f3f4f6; }
+
 
         /* Dark Theme */
         body.theme-dark { background-color: #000000; }
@@ -64,8 +87,11 @@
         .theme-dark .input::placeholder { color: #718096; }
         .theme-dark .social-icon { color: #a0aec0; }
         .theme-dark .social-icon.github:hover { color: #ffffff; }
+        .theme-dark .download-menu { background-color: #1f2937; color: #d1d5db; }
+        .theme-dark .download-menu a:hover { background-color: #374151; }
 
-        /* Fancy Themes (Aurora, Stars, Flow, Constellation) */
+
+        /* Fancy Themes (Stars, Flow, Constellation) */
         body.theme-fancy { background-color: #0a0a0a; }
         .theme-fancy .main-content { color: #ffffff; }
         .theme-fancy .subtitle, .theme-fancy .footer-text, .theme-fancy .social-icon { color: #ffffff; }
@@ -74,13 +100,45 @@
         .theme-fancy .input::placeholder { color: #ffffff; }
         .theme-fancy .social-icon.github:hover { opacity: 0.8; }
         .theme-fancy .social-icon.linkedin:hover { color: #3b82f6; }
+        .theme-fancy .download-menu { background-color: rgba(31, 41, 55, 0.8); backdrop-filter: blur(5px); color: #d1d5db; }
+        .theme-fancy .download-menu a:hover { background-color: rgba(55, 65, 81, 0.8); }
 
+        /* Glow Theme */
+        body.theme-glow {
+            background: linear-gradient(-45deg, #ff7e5f, #feb47b, #86A8E7, #91EAE4);
+            background-size: 400% 400%;
+            animation: gradient-flow 10s ease infinite;
+        }
+        /* Glow Theme Overrides */
+        .theme-glow .main-content,
+        .theme-glow .subtitle,
+        .theme-glow .footer-text,
+        .theme-glow .social-icon {
+            color: #000000;
+        }
+        .theme-glow .card {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .theme-glow .input {
+            color: #000000;
+            border-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        .theme-glow .input::placeholder {
+            color: #333333;
+        }
+        .theme-glow .social-icon.github:hover {
+            opacity: 0.7;
+        }
+        .theme-glow .social-icon.linkedin:hover {
+            color: #0a66c2;
+        }
 
     </style>
 </head>
 <body class="theme-fancy">
     <!-- Canvases for the animated backgrounds -->
-    <canvas id="aurora-canvas" class="background-canvas"></canvas>
     <canvas id="stars-canvas" class="background-canvas"></canvas>
     <canvas id="flow-canvas" class="background-canvas"></canvas>
     <canvas id="constellation-canvas" class="background-canvas"></canvas>
@@ -101,7 +159,7 @@
             <div id="theme-options" class="absolute right-0 mt-2 w-36 bg-gray-800/70 backdrop-blur-md rounded-lg shadow-xl overflow-hidden hidden">
                 <button data-theme="light" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Light</button>
                 <button data-theme="dark" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Dark</button>
-                <button data-theme="aurora" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Aurora</button>
+                <button data-theme="glow" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Glow</button>
                 <button data-theme="stars" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Stars</button>
                 <button data-theme="flow" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Flow Field</button>
                 <button data-theme="constellation" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Constellation</button>
@@ -122,24 +180,44 @@
                         <label for="text-input" class="sr-only">Enter text or URL</label>
                         <input type="text" id="text-input" placeholder="Enter text or a URL..." class="input w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow">
                     </div>
-                    <button id="generate-btn" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform active:scale-95">
+                    <!-- Size Slider -->
+                    <div class="pt-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="size-slider" class="text-sm font-medium main-content">QR Code Size</label>
+                            <span id="size-value" class="text-sm font-mono subtitle">111px</span>
+                        </div>
+                        <input type="range" id="size-slider" min="100" max="369" value="111" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:bg-gray-700">
+                    </div>
+                    <button id="generate-btn" class="w-full animated-gradient-btn text-black font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform active:scale-95">
                         Generate QR Code
                     </button>
                 </div>
                 <div id="qr-wrapper" class="mt-6 text-center">
                     <p id="error-message" class="text-red-400 text-sm mb-4 hidden"></p>
-                    <div id="qrcode-container" class="w-48 h-48 md:w-56 md:h-56 mx-auto bg-transparent rounded-lg flex items-center justify-center hidden">
+                    <div id="qrcode-container" class="mx-auto bg-transparent rounded-lg flex items-center justify-center hidden">
                          <div id="qrcode" class="p-2 bg-white rounded-md inline-block"></div>
                     </div>
-                    <button id="download-btn" class="mt-4 bg-gray-700 text-white font-medium py-2 px-5 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 transition hidden">
-                        Download PNG
-                    </button>
+                    <!-- Download Button Dropdown -->
+                    <div id="download-wrapper" class="relative inline-block text-left mt-4 hidden">
+                        <div>
+                            <button type="button" id="download-menu-btn" class="inline-flex justify-center w-full rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500">
+                                Download
+                                <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="download-options" class="download-menu origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="download-menu-btn">
+                            <div class="py-1" role="none">
+                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="png">PNG</a>
+                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="jpg">JPG / JPEG</a>
+                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="pdf">PDF</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <footer class="text-center mt-8 space-y-2">
-                <p class="text-sm footer-text">
-                    Made with ❤️ by Rajat Kumar
-                </p>
                 <div class="flex justify-center items-center space-x-4">
                     <a href="https://www.linkedin.com/comm/mynetwork/discovery-see-all?usecase=PEOPLE_FOLLOWS&followMember=rajatkumar7" target="_blank" rel="noopener noreferrer" class="social-icon linkedin" aria-label="LinkedIn Profile">
                         <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.71c-.966 0-1.75-.783-1.75-1.75s.784-1.75 1.75-1.75 1.75.783 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.71h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
@@ -148,53 +226,62 @@
                         <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.492.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" /></svg>
                     </a>
                 </div>
+                <p class="text-sm footer-text">
+                    Made with ❤️ by Rajat Kumar
+                </p>
                 <p class="text-xs footer-text pt-2">
-                    Copyright © 2025 Rajat Kumar. Released under the 
-                    <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-80">MIT License</a>.
+                    Copyright © 2025 Rajat Kumar. All Rights Reserved.
                 </p>
             </footer>
         </div>
     </main>
 
     <script>
-        // --- QR Code Logic ---
+        // --- Element Selection ---
         const generateBtn = document.getElementById('generate-btn');
-        const downloadBtn = document.getElementById('download-btn');
         const textInput = document.getElementById('text-input');
         const qrcodeContainer = document.getElementById('qrcode-container');
         const qrcodeDiv = document.getElementById('qrcode');
         const errorMessage = document.getElementById('error-message');
-        let qrcodeInstance = null; 
+        const sizeSlider = document.getElementById('size-slider');
+        const sizeValueDisplay = document.getElementById('size-value');
+        
+        // --- Download Logic ---
+        const downloadWrapper = document.getElementById('download-wrapper');
+        const downloadMenuBtn = document.getElementById('download-menu-btn');
+        const downloadOptions = document.getElementById('download-options');
 
         const generateQRCode = () => {
             const data = textInput.value.trim();
-            qrcodeContainer.classList.add('hidden');
-            downloadBtn.classList.add('hidden');
-            errorMessage.classList.add('hidden');
-            errorMessage.textContent = '';
+            const qrSize = parseInt(sizeSlider.value, 10);
 
+            qrcodeContainer.classList.add('hidden');
+            downloadWrapper.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            
             if (!data) {
-                errorMessage.textContent = 'Please enter some text or a URL.';
+                errorMessage.textContent = 'Please enter text or a URL to generate a QR code.';
                 errorMessage.classList.remove('hidden');
-                textInput.focus();
                 return;
             }
+            
+            qrcodeDiv.innerHTML = ''; // Clear previous QR code before generating a new one
 
             try {
-                 if (qrcodeInstance) {
-                    qrcodeInstance.clear();
-                    qrcodeInstance.makeCode(data);
-                } else {
-                    qrcodeInstance = new QRCode(qrcodeDiv, {
-                        text: data, width: 200, height: 200,
-                        colorDark: "#000000", colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-                }
+                new QRCode(qrcodeDiv, {
+                    text: data,
+                    width: qrSize,
+                    height: qrSize,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                // Adjust container size to fit the new QR code
                 qrcodeContainer.classList.remove('hidden');
                 qrcodeContainer.classList.add('fade-in');
-                downloadBtn.classList.remove('hidden');
-                downloadBtn.classList.add('fade-in');
+                downloadWrapper.classList.remove('hidden');
+                downloadWrapper.classList.add('fade-in');
             } catch (error) {
                 console.error("QR Code generation failed:", error);
                 errorMessage.textContent = 'Could not generate QR code. The input might be too long.';
@@ -206,23 +293,87 @@
         textInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') generateQRCode();
         });
+        
+        sizeSlider.addEventListener('input', () => {
+            sizeValueDisplay.textContent = `${sizeSlider.value}px`;
+        });
 
-        downloadBtn.addEventListener('click', () => {
+        const downloadQR = (format) => {
             const canvas = qrcodeDiv.querySelector('canvas');
-            if (canvas) {
-                const link = document.createElement('a');
-                link.download = 'qrcode.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+            if (!canvas) return;
+
+            const padding = 24; // Creates a 12px border on each side
+            const borderRadius = 12;
+
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCanvas.width = canvas.width + padding;
+            tempCanvas.height = canvas.height + padding;
+
+            // Draw the rounded white background
+            tempCtx.fillStyle = '#ffffff';
+            tempCtx.beginPath();
+            tempCtx.moveTo(borderRadius, 0);
+            tempCtx.lineTo(tempCanvas.width - borderRadius, 0);
+            tempCtx.quadraticCurveTo(tempCanvas.width, 0, tempCanvas.width, borderRadius);
+            tempCtx.lineTo(tempCanvas.width, tempCanvas.height - borderRadius);
+            tempCtx.quadraticCurveTo(tempCanvas.width, tempCanvas.height, tempCanvas.width - borderRadius, tempCanvas.height);
+            tempCtx.lineTo(borderRadius, tempCanvas.height);
+            tempCtx.quadraticCurveTo(0, tempCanvas.height, 0, tempCanvas.height - borderRadius);
+            tempCtx.lineTo(0, borderRadius);
+            tempCtx.quadraticCurveTo(0, 0, borderRadius, 0);
+            tempCtx.closePath();
+            tempCtx.fill();
+            
+            // Draw the QR code onto the new canvas
+            tempCtx.drawImage(canvas, padding / 2, padding / 2);
+
+            const link = document.createElement('a');
+
+            switch (format) {
+                case 'png':
+                    link.download = 'qrcode.png';
+                    link.href = tempCanvas.toDataURL('image/png');
+                    link.click();
+                    break;
+                case 'jpg':
+                    link.download = 'qrcode.jpeg';
+                    link.href = tempCanvas.toDataURL('image/jpeg', 0.95);
+                    link.click();
+                    break;
+                case 'pdf':
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                    const imgData = tempCanvas.toDataURL('image/png');
+                    const qrSizeMM = 60 * (tempCanvas.width / 224); // Scale PDF size based on selected size
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const x = (pdfWidth - qrSizeMM) / 2;
+                    pdf.addImage(imgData, 'PNG', x, 20, qrSizeMM, qrSizeMM);
+                    pdf.save('qrcode.pdf');
+                    break;
+            }
+        };
+
+        downloadMenuBtn.addEventListener('click', () => {
+            downloadOptions.classList.toggle('hidden');
+        });
+
+        downloadOptions.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (e.target.classList.contains('download-format-btn')) {
+                const format = e.target.dataset.format;
+                downloadQR(format);
+                downloadOptions.classList.add('hidden'); 
             }
         });
+
 
         // --- THEME SWITCHER LOGIC ---
         const themeToggleButton = document.getElementById('theme-toggle-btn');
         const themeOptions = document.getElementById('theme-options');
         const themeButtons = document.querySelectorAll('.theme-btn');
         const canvases = {
-            aurora: document.getElementById('aurora-canvas'),
             stars: document.getElementById('stars-canvas'),
             flow: document.getElementById('flow-canvas'),
             constellation: document.getElementById('constellation-canvas')
@@ -252,9 +403,8 @@
                 document.body.classList.add('theme-dark');
             } else {
                 document.body.classList.add('theme-fancy');
-                if (theme === 'aurora') {
-                    canvases.aurora.classList.add('active');
-                    startAuroraAnimation();
+                if (theme === 'glow') {
+                    document.body.classList.add('theme-glow');
                 } else if (theme === 'stars') {
                     canvases.stars.classList.add('active');
                     startStarsAnimation();
@@ -277,6 +427,9 @@
             if (!document.getElementById('theme-switcher').contains(e.target)) {
                  themeOptions.classList.add('hidden');
             }
+            if (!document.getElementById('download-wrapper').contains(e.target)) {
+                 downloadOptions.classList.add('hidden');
+            }
         });
 
         themeButtons.forEach(button => {
@@ -297,17 +450,7 @@
         window.addEventListener('resize', resizeAllCanvases);
         resizeAllCanvases();
         
-        // --- Aurora Animation ---
-        let auroraBlobs = [];
-        const auroraCtx = canvases.aurora.getContext('2d');
-        class AuroraBlob {
-            constructor(color) { this.x = Math.random() * canvases.aurora.width; this.y = Math.random() * canvases.aurora.height; this.radius = Math.random() * 250 + 200; this.vx = (Math.random() - 0.5) * 1.0; this.vy = (Math.random() - 0.5) * 1.0; this.color = color; }
-            update() { this.x += this.vx; this.y += this.vy; if (this.x < 0 || this.x > canvases.aurora.width) this.vx *= -1; if (this.y < 0 || this.y > canvases.aurora.height) this.vy *= -1; }
-            draw() { auroraCtx.beginPath(); auroraCtx.fillStyle = this.color; auroraCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); auroraCtx.fill(); }
-        }
-        const initAurora = () => { auroraBlobs = [new AuroraBlob('hsl(190, 70%, 35%)'), new AuroraBlob('hsl(260, 60%, 40%)'), new AuroraBlob('hsl(320, 65%, 38%)')]; };
-        const animateAurora = () => { auroraCtx.clearRect(0, 0, canvases.aurora.width, canvases.aurora.height); auroraCtx.filter = 'blur(100px) contrast(10)'; auroraBlobs.forEach(b => { b.update(); b.draw(); }); auroraCtx.filter = 'none'; activeAnimationId = requestAnimationFrame(animateAurora); };
-        const startAuroraAnimation = () => { initAurora(); animateAurora(); };
+        // --- Aurora Animation --- - REMOVED
 
         // --- Stars Animation ---
         let stars = [];
@@ -390,4 +533,9 @@
     </script>
 </body>
 </html>
+
+
+
+
+
 
