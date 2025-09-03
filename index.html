@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Generator</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3e%3cpath d='M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm0 4h2v2h-2v-2zm-2-2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2z'/%3e%3c/svg%3e">
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- QR Code generation library -->
@@ -82,6 +84,13 @@
     <canvas id="stars-canvas" class="background-canvas"></canvas>
     <canvas id="flow-canvas" class="background-canvas"></canvas>
     <canvas id="constellation-canvas" class="background-canvas"></canvas>
+
+    <!-- LOGO -->
+    <div class="fixed top-4 left-4 z-50">
+         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 main-content" fill="currentColor" viewBox="0 0 24 24" stroke="none">
+            <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm0 4h2v2h-2v-2zm-2-2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
+        </svg>
+    </div>
 
     <!-- THEME SWITCHER -->
     <div class="fixed top-4 right-4 z-50">
@@ -377,7 +386,7 @@
         };
 
         // --- Initial Load ---
-        setTheme('aurora'); // Default theme
+        setTheme('dark'); // Default theme
     </script>
 </body>
 </html>
