@@ -14,17 +14,21 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0a0a0a; /* Dark background for the futuristic theme */
-            overflow: hidden; /* Hide scrollbars caused by canvas */
+            transition: background-color 0.5s ease;
         }
-        /* Canvas for the animated background */
-        #background-canvas {
+        /* Canvas for animated backgrounds */
+        .background-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: -1; /* Place it behind all other content */
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .background-canvas.active {
+            opacity: 1;
         }
         /* Custom style for the QR code container to center the canvas element */
         #qrcode-container canvas {
@@ -38,65 +42,110 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Light Theme */
+        body.theme-light { background-color: #ffffff; }
+        .theme-light .main-content { color: #000000; }
+        .theme-light .subtitle, .theme-light .footer-text { color: #4a5568; }
+        .theme-light .card { background-color: #f7fafc; border-color: #e2e8f0; }
+        .theme-light .input { background-color: #ffffff; border-color: #cbd5e0; color: #000000; }
+        .theme-light .input::placeholder { color: #a0aec0; }
+        .theme-light .social-icon { color: #4a5568; }
+        .theme-light .social-icon.github:hover { color: #000000; }
+
+        /* Dark Theme */
+        body.theme-dark { background-color: #000000; }
+        .theme-dark .main-content { color: #ffffff; }
+        .theme-dark .subtitle, .theme-dark .footer-text { color: #a0aec0; }
+        .theme-dark .card { background-color: #111111; border-color: #4a5568; }
+        .theme-dark .input { background-color: #1a202c; border-color: #4a5568; color: #ffffff; }
+        .theme-dark .input::placeholder { color: #718096; }
+        .theme-dark .social-icon { color: #a0aec0; }
+        .theme-dark .social-icon.github:hover { color: #ffffff; }
+
+        /* Fancy Themes (Aurora, Stars, Flow, Constellation) */
+        body.theme-fancy { background-color: #0a0a0a; }
+        .theme-fancy .main-content { color: #ffffff; }
+        .theme-fancy .subtitle, .theme-fancy .footer-text, .theme-fancy .social-icon { color: #ffffff; }
+        .theme-fancy .card { background-color: rgba(17, 17, 17, 0.3); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-color: rgba(128, 128, 128, 0.2); }
+        .theme-fancy .input { background-color: rgba(30, 30, 30, 0.5); border-color: rgba(128, 128, 128, 0.3); color: #ffffff; }
+        .theme-fancy .input::placeholder { color: #ffffff; }
+        .theme-fancy .social-icon.github:hover { opacity: 0.8; }
+        .theme-fancy .social-icon.linkedin:hover { color: #3b82f6; }
+
+
     </style>
 </head>
-<body class="text-gray-200 flex items-center justify-center min-h-screen">
-    <!-- Canvas for the animated background will be injected here -->
-    <canvas id="background-canvas"></canvas>
+<body class="theme-fancy">
+    <!-- Canvases for the animated backgrounds -->
+    <canvas id="aurora-canvas" class="background-canvas"></canvas>
+    <canvas id="stars-canvas" class="background-canvas"></canvas>
+    <canvas id="flow-canvas" class="background-canvas"></canvas>
+    <canvas id="constellation-canvas" class="background-canvas"></canvas>
 
-    <div class="w-full max-w-md mx-auto p-6 md:p-8 z-10">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-white">QR Code Generator</h1>
-            <p class="text-white mt-2">Simply enter text or a URL to create your QR code.</p>
-        </div>
-
-        <!-- Glassmorphism effect card -->
-        <div class="bg-gray-900/30 backdrop-blur-lg p-6 rounded-2xl shadow-2xl border border-gray-700/50">
-            <!-- Input field for text/URL -->
-            <div class="space-y-4">
-                <div>
-                    <label for="text-input" class="sr-only">Enter text or URL</label>
-                    <input type="text" id="text-input" placeholder="Enter text or a URL..." class="w-full px-4 py-3 text-base bg-gray-800/80 border-gray-700 border rounded-lg text-white placeholder-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow">
-                </div>
-                <!-- Generate Button -->
-                <button id="generate-btn" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform active:scale-95">
-                    Generate QR Code
-                </button>
-            </div>
-
-            <!-- Container for the QR Code and Download Button -->
-            <div id="qr-wrapper" class="mt-6 text-center">
-                 <!-- Error Message Display -->
-                <p id="error-message" class="text-red-400 text-sm mb-4 hidden"></p>
-                <!-- QR Code Display -->
-                <div id="qrcode-container" class="w-48 h-48 md:w-56 md:h-56 mx-auto bg-transparent rounded-lg flex items-center justify-center hidden">
-                     <!-- The QR code itself is white on a transparent background, so we add a white padded container -->
-                     <div id="qrcode" class="p-2 bg-white rounded-md inline-block"></div>
-                </div>
-                 <!-- Download Button -->
-                <button id="download-btn" class="mt-4 bg-gray-700 text-white font-medium py-2 px-5 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 transition hidden">
-                    Download PNG
-                </button>
+    <!-- THEME SWITCHER -->
+    <div class="fixed top-4 right-4 z-50">
+        <div class="relative" id="theme-switcher">
+            <button id="theme-toggle-btn" class="p-2 bg-gray-800/50 backdrop-blur-md rounded-full text-white hover:bg-gray-700/70">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+            </button>
+            <div id="theme-options" class="absolute right-0 mt-2 w-36 bg-gray-800/70 backdrop-blur-md rounded-lg shadow-xl overflow-hidden hidden">
+                <button data-theme="light" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Light</button>
+                <button data-theme="dark" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Dark</button>
+                <button data-theme="aurora" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Aurora</button>
+                <button data-theme="stars" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Stars</button>
+                <button data-theme="flow" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Flow Field</button>
+                <button data-theme="constellation" class="theme-btn w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700/70">Constellation</button>
             </div>
         </div>
-        <footer class="text-center mt-8 space-y-2">
-            <p class="text-sm text-white">
-                Made with ❤️ by Rajat Kumar
-            </p>
-            <div class="flex justify-center items-center space-x-4">
-                <a href="https://www.linkedin.com/comm/mynetwork/discovery-see-all?usecase=PEOPLE_FOLLOWS&followMember=rajatkumar7" target="_blank" rel="noopener noreferrer" class="text-white hover:text-blue-500 transition-colors" aria-label="LinkedIn Profile">
-                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.71c-.966 0-1.75-.783-1.75-1.75s.784-1.75 1.75-1.75 1.75.783 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.71h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                    </svg>
-                </a>
-                <a href="https://github.com/rajatkumar1011" target="_blank" rel="noopener noreferrer" class="text-white hover:opacity-80 transition-opacity" aria-label="GitHub Profile">
-                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.492.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" />
-                    </svg>
-                </a>
-            </div>
-        </footer>
     </div>
+
+    <main class="w-full max-w-md mx-auto p-6 md:p-8 z-10 flex flex-col min-h-screen justify-center">
+        <div>
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold main-content">QR Code Generator</h1>
+                <p class="subtitle mt-2">Simply enter text or a URL to create your QR code.</p>
+            </div>
+
+            <div class="card p-6 rounded-2xl shadow-2xl border">
+                <div class="space-y-4">
+                    <div>
+                        <label for="text-input" class="sr-only">Enter text or URL</label>
+                        <input type="text" id="text-input" placeholder="Enter text or a URL..." class="input w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow">
+                    </div>
+                    <button id="generate-btn" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform active:scale-95">
+                        Generate QR Code
+                    </button>
+                </div>
+                <div id="qr-wrapper" class="mt-6 text-center">
+                    <p id="error-message" class="text-red-400 text-sm mb-4 hidden"></p>
+                    <div id="qrcode-container" class="w-48 h-48 md:w-56 md:h-56 mx-auto bg-transparent rounded-lg flex items-center justify-center hidden">
+                         <div id="qrcode" class="p-2 bg-white rounded-md inline-block"></div>
+                    </div>
+                    <button id="download-btn" class="mt-4 bg-gray-700 text-white font-medium py-2 px-5 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 transition hidden">
+                        Download PNG
+                    </button>
+                </div>
+            </div>
+            <footer class="text-center mt-8 space-y-2">
+                <p class="text-sm footer-text">
+                    Made with ❤️ by Rajat Kumar
+                </p>
+                <div class="flex justify-center items-center space-x-4">
+                    <a href="https://www.linkedin.com/comm/mynetwork/discovery-see-all?usecase=PEOPLE_FOLLOWS&followMember=rajatkumar7" target="_blank" rel="noopener noreferrer" class="social-icon linkedin" aria-label="LinkedIn Profile">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.71c-.966 0-1.75-.783-1.75-1.75s.784-1.75 1.75-1.75 1.75.783 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.71h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    </a>
+                    <a href="https://github.com/rajatkumar1011" target="_blank" rel="noopener noreferrer" class="social-icon github" aria-label="GitHub Profile">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.492.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" /></svg>
+                    </a>
+                </div>
+                <p class="text-xs footer-text pt-2">
+                    Copyright © 2025 Rajat Kumar. Released under the 
+                    <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-80">MIT License</a>.
+                </p>
+            </footer>
+        </div>
+    </main>
 
     <script>
         // --- QR Code Logic ---
@@ -128,20 +177,15 @@
                     qrcodeInstance.makeCode(data);
                 } else {
                     qrcodeInstance = new QRCode(qrcodeDiv, {
-                        text: data,
-                        width: 200,
-                        height: 200,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
+                        text: data, width: 200, height: 200,
+                        colorDark: "#000000", colorLight: "#ffffff",
                         correctLevel: QRCode.CorrectLevel.H
                     });
                 }
-                
                 qrcodeContainer.classList.remove('hidden');
                 qrcodeContainer.classList.add('fade-in');
                 downloadBtn.classList.remove('hidden');
                 downloadBtn.classList.add('fade-in');
-
             } catch (error) {
                 console.error("QR Code generation failed:", error);
                 errorMessage.textContent = 'Could not generate QR code. The input might be too long.';
@@ -151,9 +195,7 @@
 
         generateBtn.addEventListener('click', generateQRCode);
         textInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                generateQRCode();
-            }
+            if (event.key === 'Enter') generateQRCode();
         });
 
         downloadBtn.addEventListener('click', () => {
@@ -166,83 +208,177 @@
             }
         });
 
-        // --- Animated Background Logic (Morphing Aurora) ---
-        const canvas = document.getElementById('background-canvas');
-        const ctx = canvas.getContext('2d');
-        let blobs = [];
-
-        // Set canvas to full screen
-        const resizeCanvas = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        
-        // Blob class
-        class Blob {
-            constructor(color) {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.radius = Math.random() * 250 + 200; // Larger blobs for a smoother look
-                this.vx = (Math.random() - 0.5) * 1.0; // Slower movement
-                this.vy = (Math.random() - 0.5) * 1.0;
-                this.color = color;
-            }
-
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-
-                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-            }
-
-            draw() {
-                ctx.beginPath();
-                ctx.fillStyle = this.color;
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        // Initialize blobs
-        const initBlobs = () => {
-            blobs = [
-                // Using darker, less saturated colors for better text contrast
-                new Blob('hsl(190, 70%, 35%)'), // Deeper Cyan
-                new Blob('hsl(260, 60%, 40%)'), // Deeper Purple
-                new Blob('hsl(320, 65%, 38%)')  // Deeper Pink/Magenta
-            ];
+        // --- THEME SWITCHER LOGIC ---
+        const themeToggleButton = document.getElementById('theme-toggle-btn');
+        const themeOptions = document.getElementById('theme-options');
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        const canvases = {
+            aurora: document.getElementById('aurora-canvas'),
+            stars: document.getElementById('stars-canvas'),
+            flow: document.getElementById('flow-canvas'),
+            constellation: document.getElementById('constellation-canvas')
         };
 
-        window.addEventListener('resize', () => {
-            resizeCanvas();
-            initBlobs(); // Re-initialize blobs for the new size
+        let activeAnimationId = null;
+
+        const stopAllAnimations = () => {
+            if (activeAnimationId) {
+                cancelAnimationFrame(activeAnimationId);
+                activeAnimationId = null;
+            }
+            Object.values(canvases).forEach(c => {
+                 const ctx = c.getContext('2d');
+                 ctx.clearRect(0, 0, c.width, c.height);
+                 c.classList.remove('active');
+            });
+        };
+
+        const setTheme = (theme) => {
+            document.body.className = ''; // Clear all classes
+            stopAllAnimations();
+
+            if (theme === 'light') {
+                document.body.classList.add('theme-light');
+            } else if (theme === 'dark') {
+                document.body.classList.add('theme-dark');
+            } else {
+                document.body.classList.add('theme-fancy');
+                if (theme === 'aurora') {
+                    canvases.aurora.classList.add('active');
+                    startAuroraAnimation();
+                } else if (theme === 'stars') {
+                    canvases.stars.classList.add('active');
+                    startStarsAnimation();
+                } else if (theme === 'flow') {
+                    canvases.flow.classList.add('active');
+                    startFlowAnimation();
+                } else if (theme === 'constellation') {
+                    canvases.constellation.classList.add('active');
+                    startConstellationAnimation();
+                }
+            }
+            themeOptions.classList.add('hidden');
+        };
+
+        themeToggleButton.addEventListener('click', () => {
+            themeOptions.classList.toggle('hidden');
         });
         
-        // Animation loop
-        const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Corrected filter values: Reduced blur and contrast to prevent "crushing" colors to black.
-            ctx.filter = 'blur(100px) contrast(10)';
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('theme-switcher').contains(e.target)) {
+                 themeOptions.classList.add('hidden');
+            }
+        });
 
-            blobs.forEach(blob => {
-                blob.update();
-                blob.draw();
+        themeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const theme = button.getAttribute('data-theme');
+                setTheme(theme);
             });
-            
-            // Reset the filter so it doesn't affect other elements
-            ctx.filter = 'none';
+        });
 
-            requestAnimationFrame(animate);
+        // --- BACKGROUND ANIMATION LOGIC ---
+        const resizeAllCanvases = () => {
+             Object.values(canvases).forEach(c => {
+                 c.width = window.innerWidth;
+                 c.height = window.innerHeight;
+             });
         };
         
-        resizeCanvas();
-        initBlobs();
-        animate();
+        window.addEventListener('resize', resizeAllCanvases);
+        resizeAllCanvases();
+        
+        // --- Aurora Animation ---
+        let auroraBlobs = [];
+        const auroraCtx = canvases.aurora.getContext('2d');
+        class AuroraBlob {
+            constructor(color) { this.x = Math.random() * canvases.aurora.width; this.y = Math.random() * canvases.aurora.height; this.radius = Math.random() * 250 + 200; this.vx = (Math.random() - 0.5) * 1.0; this.vy = (Math.random() - 0.5) * 1.0; this.color = color; }
+            update() { this.x += this.vx; this.y += this.vy; if (this.x < 0 || this.x > canvases.aurora.width) this.vx *= -1; if (this.y < 0 || this.y > canvases.aurora.height) this.vy *= -1; }
+            draw() { auroraCtx.beginPath(); auroraCtx.fillStyle = this.color; auroraCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); auroraCtx.fill(); }
+        }
+        const initAurora = () => { auroraBlobs = [new AuroraBlob('hsl(190, 70%, 35%)'), new AuroraBlob('hsl(260, 60%, 40%)'), new AuroraBlob('hsl(320, 65%, 38%)')]; };
+        const animateAurora = () => { auroraCtx.clearRect(0, 0, canvases.aurora.width, canvases.aurora.height); auroraCtx.filter = 'blur(100px) contrast(10)'; auroraBlobs.forEach(b => { b.update(); b.draw(); }); auroraCtx.filter = 'none'; activeAnimationId = requestAnimationFrame(animateAurora); };
+        const startAuroraAnimation = () => { initAurora(); animateAurora(); };
 
+        // --- Stars Animation ---
+        let stars = [];
+        const starsCtx = canvases.stars.getContext('2d');
+        const createStars = () => { stars = []; for (let i = 0; i < 200; i++) { stars.push({ x: Math.random() * canvases.stars.width, y: Math.random() * canvases.stars.height, radius: Math.random() * 1.5, alpha: Math.random(), dAlpha: (Math.random() * 0.02) - 0.01 }); } };
+        const animateStars = () => { starsCtx.clearRect(0, 0, canvases.stars.width, canvases.stars.height); stars.forEach(s => { s.alpha += s.dAlpha; if (s.alpha <= 0 || s.alpha >= 1) s.dAlpha *= -1; starsCtx.beginPath(); starsCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2); starsCtx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`; starsCtx.fill(); }); activeAnimationId = requestAnimationFrame(animateStars); };
+        const startStarsAnimation = () => { createStars(); animateStars(); };
+        
+        // --- Flow Field Animation ---
+        let particles = [];
+        const flowCtx = canvases.flow.getContext('2d');
+        const createParticles = () => { particles = []; for (let i = 0; i < 2000; i++) { particles.push({ x: Math.random() * canvases.flow.width, y: Math.random() * canvases.flow.height, speed: Math.random() * 0.5 + 0.1 }); } };
+        const animateFlow = (timestamp) => {
+            const time = timestamp * 0.0005;
+            flowCtx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+            flowCtx.fillRect(0, 0, canvases.flow.width, canvases.flow.height);
+            flowCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            particles.forEach(p => {
+                const angle = (Math.cos(p.y * 0.01) + Math.sin(p.x * 0.01 + time)) * Math.PI;
+                p.x += Math.cos(angle) * p.speed; p.y += Math.sin(angle) * p.speed;
+                if (p.x < 0) p.x = canvases.flow.width; if (p.x > canvases.flow.width) p.x = 0;
+                if (p.y < 0) p.y = canvases.flow.height; if (p.y > canvases.flow.height) p.y = 0;
+                flowCtx.fillRect(p.x, p.y, 1, 1);
+            });
+            activeAnimationId = requestAnimationFrame(animateFlow);
+        };
+        const startFlowAnimation = () => { createParticles(); flowCtx.fillStyle = 'black'; flowCtx.fillRect(0, 0, canvases.flow.width, canvases.flow.height); animateFlow(0); };
+
+        // --- Constellation Animation ---
+        let constellationParticles = [];
+        const constellationCtx = canvases.constellation.getContext('2d');
+        const createConstellationParticles = () => {
+            const particleCount = Math.floor(canvases.constellation.width / 15);
+            constellationParticles = [];
+            for (let i = 0; i < particleCount; i++) {
+                constellationParticles.push({
+                    x: Math.random() * canvases.constellation.width,
+                    y: Math.random() * canvases.constellation.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    radius: Math.random() * 1.5 + 1
+                });
+            }
+        };
+        const animateConstellation = () => {
+            constellationCtx.clearRect(0, 0, canvases.constellation.width, canvases.constellation.height);
+            constellationParticles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > canvases.constellation.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvases.constellation.height) p.vy *= -1;
+                constellationCtx.beginPath();
+                constellationCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                constellationCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                constellationCtx.fill();
+            });
+
+            constellationCtx.beginPath();
+            for (let i = 0; i < constellationParticles.length; i++) {
+                for (let j = i; j < constellationParticles.length; j++) {
+                    const dist = Math.sqrt(Math.pow(constellationParticles[i].x - constellationParticles[j].x, 2) + Math.pow(constellationParticles[i].y - constellationParticles[j].y, 2));
+                    if (dist < 100) {
+                        constellationCtx.moveTo(constellationParticles[i].x, constellationParticles[i].y);
+                        constellationCtx.lineTo(constellationParticles[j].x, constellationParticles[j].y);
+                    }
+                }
+            }
+            constellationCtx.lineWidth = 0.5;
+            constellationCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            constellationCtx.stroke();
+
+            activeAnimationId = requestAnimationFrame(animateConstellation);
+        };
+        const startConstellationAnimation = () => {
+            createConstellationParticles();
+            animateConstellation();
+        };
+
+        // --- Initial Load ---
+        setTheme('aurora'); // Default theme
     </script>
 </body>
 </html>
-
 
