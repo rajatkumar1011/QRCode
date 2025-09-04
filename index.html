@@ -210,7 +210,7 @@
                         </div>
                         <input type="range" id="size-slider" min="100" max="369" value="111" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:bg-gray-700">
                     </div>
-                    <button id="generate-btn" class="w-full animated-gradient-btn text-black font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform active:scale-95">
+                    <button id="generate-btn" class="w-full animated-gradient-btn text-black font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform active:scale-95 mt-4">
                         Generate QR Code
                     </button>
                 </div>
@@ -289,24 +289,43 @@
             
             qrcodeDiv.innerHTML = ''; // Clear previous QR code before generating a new one
 
-            try {
-                new QRCode(qrcodeDiv, {
-                    text: data,
-                    width: qrSize,
-                    height: qrSize,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
+            const errorCorrectionLevels = ['L', 'M', 'Q', 'H'];
+            const correctLevelMap = {
+                'L': QRCode.CorrectLevel.L,
+                'M': QRCode.CorrectLevel.M,
+                'Q': QRCode.CorrectLevel.Q,
+                'H': QRCode.CorrectLevel.H,
+            };
 
+            let success = false;
+            for (const level of errorCorrectionLevels) {
+                try {
+                    new QRCode(qrcodeDiv, {
+                        text: data,
+                        width: qrSize,
+                        height: qrSize,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: correctLevelMap[level]
+                    });
+                    success = true;
+                    console.log(`Successfully generated QR Code with error correction level: ${level}`);
+                    break; // Exit loop on first successful generation
+                } catch (error) {
+                    console.warn(`Failed to generate with level ${level}. Trying next level.`);
+                    qrcodeDiv.innerHTML = ''; // Clean up failed attempt
+                }
+            }
+
+            if (success) {
                 // Adjust container size to fit the new QR code
                 qrcodeContainer.classList.remove('hidden');
                 qrcodeContainer.classList.add('fade-in');
                 downloadWrapper.classList.remove('hidden');
                 downloadWrapper.classList.add('fade-in');
-            } catch (error) {
-                console.error("QR Code generation failed:", error);
-                errorMessage.textContent = 'Could not generate QR code. The input might be too long.';
+            } else {
+                console.error("QR Code generation failed at all error correction levels.");
+                errorMessage.textContent = 'Could not generate QR code. The input is too long.';
                 errorMessage.classList.remove('hidden');
             }
         };
