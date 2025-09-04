@@ -80,6 +80,15 @@
             box-shadow: 0 0 6px 2px rgba(59, 130, 246, 0.5);
           }
         }
+        
+        /* --- Typing Animation Cursor --- */
+        #typing-cursor {
+            animation: blink-cursor 1s ease-in-out infinite;
+        }
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
 
         /* Light Theme */
         body.theme-light { background-color: #ffffff; }
@@ -193,7 +202,7 @@
         <div>
             <div class="text-center mb-8">
                 <h1 class="text-3xl md:text-4xl font-bold main-content">QR Code Generator</h1>
-                <p class="subtitle mt-2">Simply enter text or a URL to create your QR code.</p>
+                <p class="subtitle mt-2 whitespace-nowrap overflow-hidden"><span id="animated-subtitle"></span><span id="typing-cursor">|</span></p>
             </div>
 
             <div class="card p-6 rounded-2xl shadow-2xl border">
@@ -748,9 +757,52 @@
             createBubbles();
             animateBubbles();
         };
+        
+        // --- TYPEWRITER ANIMATION ---
+        const setupTypewriter = () => {
+            const subtitleEl = document.getElementById('animated-subtitle');
+            if (!subtitleEl) return;
+            const text = "Simply enter text or a URL to create your QR code.";
+            const typeSpeed = 80;
+            const eraseSpeed = 30;
+            const pauseEnd = 7890;
+            const pauseStart = 1500;
+
+            let charIndex = 0;
+            let isDeleting = false;
+
+            const loop = () => {
+                const currentText = text;
+                let timeoutSpeed = typeSpeed;
+
+                if (isDeleting) {
+                    timeoutSpeed = eraseSpeed;
+                    subtitleEl.textContent = currentText.substring(0, charIndex - 1);
+                    charIndex--;
+                } else {
+                    subtitleEl.textContent = currentText.substring(0, charIndex + 1);
+                    charIndex++;
+                }
+
+                if (!isDeleting && charIndex === currentText.length) {
+                    // Pause at end
+                    timeoutSpeed = pauseEnd;
+                    isDeleting = true;
+                } else if (isDeleting && charIndex === 0) {
+                    // Pause at start
+                    timeoutSpeed = pauseStart;
+                    isDeleting = false;
+                }
+
+                setTimeout(loop, timeoutSpeed);
+            };
+            loop();
+        };
+
 
         // --- Initial Load ---
         setTheme('dark'); // Default theme
+        setupTypewriter();
     </script>
 </body>
 </html>
