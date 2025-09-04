@@ -64,6 +64,22 @@
             100% { background-position: 0% 50%; }
         }
 
+        /* --- Custom Caret & Focus Style --- */
+        .input:focus {
+            caret-color: #3B82F6; /* Modern blue caret */
+            border-color: #3b82f699; /* Softer border color on focus */
+            animation: breathing-glow 2s infinite ease-in-out;
+            outline: none; /* Ensure no default outline appears */
+        }
+
+        @keyframes breathing-glow {
+          0%, 100% {
+            box-shadow: 0 0 2px 0px rgba(59, 130, 246, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 6px 2px rgba(59, 130, 246, 0.5);
+          }
+        }
 
         /* Light Theme */
         body.theme-light { background-color: #ffffff; }
@@ -142,11 +158,14 @@
     <canvas id="stars-canvas" class="background-canvas"></canvas>
     <canvas id="flow-canvas" class="background-canvas"></canvas>
     <canvas id="constellation-canvas" class="background-canvas"></canvas>
+    <canvas id="matrix-canvas" class="background-canvas"></canvas>
+    <canvas id="squares-canvas" class="background-canvas"></canvas>
+    <canvas id="bubbles-canvas" class="background-canvas"></canvas>
 
     <!-- LOGO -->
     <div class="fixed top-4 left-4 z-50">
          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 main-content" fill="currentColor" viewBox="0 0 24 24" stroke="none">
-            <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm0 4h2v2h-2v-2zm-2-2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
+             <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm0 4h2v2h-2v-2zm-2-2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
         </svg>
     </div>
 
@@ -161,7 +180,10 @@
                 <button data-theme="dark" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Dark</button>
                 <button data-theme="glow" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Glow</button>
                 <button data-theme="stars" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Stars</button>
+                <button data-theme="squares" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Squares</button>
+                <button data-theme="bubbles" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Bubbles</button>
                 <button data-theme="flow" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Flow Field</button>
+                <button data-theme="matrix" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Digital Rain</button>
                 <button data-theme="constellation" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Constellation</button>
             </div>
         </div>
@@ -178,7 +200,7 @@
                 <div class="space-y-4">
                     <div>
                         <label for="text-input" class="sr-only">Enter text or URL</label>
-                        <input type="text" id="text-input" placeholder="Enter text or a URL..." class="input w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow">
+                        <input type="text" id="text-input" placeholder="Enter text or a URL..." class="input w-full px-4 py-3 text-base border rounded-lg focus:outline-none transition-shadow">
                     </div>
                     <!-- Size Slider -->
                     <div class="pt-2">
@@ -376,7 +398,10 @@
         const canvases = {
             stars: document.getElementById('stars-canvas'),
             flow: document.getElementById('flow-canvas'),
-            constellation: document.getElementById('constellation-canvas')
+            constellation: document.getElementById('constellation-canvas'),
+            matrix: document.getElementById('matrix-canvas'),
+            squares: document.getElementById('squares-canvas'),
+            bubbles: document.getElementById('bubbles-canvas')
         };
 
         let activeAnimationId = null;
@@ -414,6 +439,15 @@
                 } else if (theme === 'constellation') {
                     canvases.constellation.classList.add('active');
                     startConstellationAnimation();
+                } else if (theme === 'matrix') {
+                    canvases.matrix.classList.add('active');
+                    startMatrixAnimation();
+                } else if (theme === 'squares') {
+                    canvases.squares.classList.add('active');
+                    startSquaresAnimation();
+                } else if (theme === 'bubbles') {
+                    canvases.bubbles.classList.add('active');
+                    startBubblesAnimation();
                 }
             }
             themeOptions.classList.add('hidden');
@@ -447,7 +481,17 @@
              });
         };
         
-        window.addEventListener('resize', resizeAllCanvases);
+        window.addEventListener('resize', () => {
+            resizeAllCanvases();
+            if (document.body.classList.contains('theme-fancy')) {
+                if (canvases.stars.classList.contains('active')) { createStars(); }
+                if (canvases.flow.classList.contains('active')) { createParticles(); }
+                if (canvases.constellation.classList.contains('active')) { createConstellationParticles(); }
+                if (canvases.matrix.classList.contains('active')) { setupMatrix(); }
+                if (canvases.bubbles.classList.contains('active')) { createBubbles(); }
+                // The 'squares' animation doesn't need a reset function as it's purely generative
+            }
+        });
         resizeAllCanvases();
         
         // --- Aurora Animation --- - REMOVED
@@ -462,18 +506,40 @@
         // --- Flow Field Animation ---
         let particles = [];
         const flowCtx = canvases.flow.getContext('2d');
-        const createParticles = () => { particles = []; for (let i = 0; i < 2000; i++) { particles.push({ x: Math.random() * canvases.flow.width, y: Math.random() * canvases.flow.height, speed: Math.random() * 0.5 + 0.1 }); } };
+        const createParticles = () => { 
+            particles = []; 
+            // Reduced particle count for a cleaner look, scales with screen width
+            const particleCount = Math.floor(canvases.flow.width / 3.5);
+            for (let i = 0; i < particleCount; i++) { 
+                particles.push({ 
+                    x: Math.random() * canvases.flow.width, 
+                    y: Math.random() * canvases.flow.height, 
+                    speed: Math.random() * 0.4 + 0.1, // Slightly slower speed
+                    radius: Math.random() * 1.2 + 0.8 // Particles are now circles with varying radii
+                }); 
+            } 
+        };
         const animateFlow = (timestamp) => {
-            const time = timestamp * 0.0005;
-            flowCtx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+            const time = timestamp * 0.0002; // Slower time evolution for a more gentle flow
+            // Faster fade-out for shorter, sleeker trails
+            flowCtx.fillStyle = 'rgba(10, 10, 10, 0.08)'; 
             flowCtx.fillRect(0, 0, canvases.flow.width, canvases.flow.height);
-            flowCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            flowCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             particles.forEach(p => {
-                const angle = (Math.cos(p.y * 0.01) + Math.sin(p.x * 0.01 + time)) * Math.PI;
+                // Smoother angle calculation for more graceful curves
+                const angle = (Math.cos(p.y * 0.004) + Math.sin(p.x * 0.004 + time)) * 2;
                 p.x += Math.cos(angle) * p.speed; p.y += Math.sin(angle) * p.speed;
-                if (p.x < 0) p.x = canvases.flow.width; if (p.x > canvases.flow.width) p.x = 0;
-                if (p.y < 0) p.y = canvases.flow.height; if (p.y > canvases.flow.height) p.y = 0;
-                flowCtx.fillRect(p.x, p.y, 1, 1);
+
+                // Improved wrap-around logic for seamless looping
+                if (p.x < -10) p.x = canvases.flow.width + 10; 
+                if (p.x > canvases.flow.width + 10) p.x = -10;
+                if (p.y < -10) p.y = canvases.flow.height + 10; 
+                if (p.y > canvases.flow.height + 10) p.y = -10;
+                
+                // Draw particles as circles instead of squares for a softer look
+                flowCtx.beginPath();
+                flowCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                flowCtx.fill();
             });
             activeAnimationId = requestAnimationFrame(animateFlow);
         };
@@ -526,6 +592,142 @@
         const startConstellationAnimation = () => {
             createConstellationParticles();
             animateConstellation();
+        };
+
+        // --- Digital Rain (Matrix) Animation ---
+        const matrixCtx = canvases.matrix.getContext('2d');
+        let drops = [];
+        let fontSize = 16;
+        let columns = 0;
+
+        const setupMatrix = () => {
+            columns = Math.floor(canvases.matrix.width / fontSize);
+            drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.floor(Math.random() * canvases.matrix.height / fontSize);
+            }
+        };
+
+        const animateMatrix = () => {
+            matrixCtx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+            matrixCtx.fillRect(0, 0, canvases.matrix.width, canvases.matrix.height);
+            
+            matrixCtx.fillStyle = '#00f400'; // Classic matrix green
+            matrixCtx.font = `${fontSize}px monospace`;
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = Math.random() < 0.5 ? '0' : '1';
+                matrixCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvases.matrix.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i] += 0.5;
+            }
+            activeAnimationId = requestAnimationFrame(animateMatrix);
+        };
+
+        const startMatrixAnimation = () => {
+            setupMatrix();
+            animateMatrix();
+        };
+        
+        // --- Squares Animation ---
+        const squaresCtx = canvases.squares.getContext('2d');
+        let squareParticles = [];
+
+        const animateSquares = () => {
+            squaresCtx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+            squaresCtx.fillRect(0, 0, canvases.squares.width, canvases.squares.height);
+
+            // Add a new square occasionally
+            if (Math.random() > 0.96) {
+                squareParticles.push({
+                    x: Math.random() * canvases.squares.width,
+                    y: Math.random() * canvases.squares.height,
+                    size: 0,
+                    maxSize: Math.random() * 100 + 50,
+                    opacity: 1,
+                    speed: Math.random() * 0.5 + 0.2
+                });
+            }
+
+            // Animate and draw squares
+            for (let i = squareParticles.length - 1; i >= 0; i--) {
+                const p = squareParticles[i];
+                p.size += p.speed;
+                p.opacity = 1 - (p.size / p.maxSize);
+
+                if (p.opacity <= 0) {
+                    squareParticles.splice(i, 1);
+                } else {
+                    squaresCtx.strokeStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                    squaresCtx.lineWidth = 1.5;
+                    squaresCtx.strokeRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+                }
+            }
+
+            activeAnimationId = requestAnimationFrame(animateSquares);
+        };
+        
+        const startSquaresAnimation = () => {
+            squareParticles = [];
+            animateSquares();
+        };
+
+        // --- Bubbles Animation ---
+        const bubblesCtx = canvases.bubbles.getContext('2d');
+        let bubbleParticles = [];
+
+        const createBubbles = () => {
+            const bubbleCount = Math.floor(canvases.bubbles.width / 35);
+            bubbleParticles = [];
+            for (let i = 0; i < bubbleCount; i++) {
+                bubbleParticles.push({
+                    x: Math.random() * canvases.bubbles.width,
+                    y: canvases.bubbles.height + Math.random() * 100, // Start below the screen
+                    radius: Math.random() * 20 + 10, // Varying sizes
+                    vx: (Math.random() - 0.5) * 0.5, // Gentle side-to-side drift
+                    vy: -(Math.random() * 1 + 0.5), // Upward speed
+                    opacity: Math.random() * 0.4 + 0.1
+                });
+            }
+        };
+
+        const animateBubbles = () => {
+            bubblesCtx.clearRect(0, 0, canvases.bubbles.width, canvases.bubbles.height);
+            
+            bubbleParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Reset bubble when it goes off screen
+                if (p.y < -p.radius * 2) {
+                    p.y = canvases.bubbles.height + p.radius;
+                    p.x = Math.random() * canvases.bubbles.width;
+                }
+                if (p.x < -p.radius || p.x > canvases.bubbles.width + p.radius) {
+                    p.vx *= -1; // Bounce off sides
+                }
+
+                bubblesCtx.beginPath();
+                bubblesCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                
+                // Create a glossy effect with a radial gradient
+                const gradient = bubblesCtx.createRadialGradient(p.x - p.radius * 0.3, p.y - p.radius * 0.3, 0, p.x, p.y, p.radius);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${p.opacity * 0.8})`);
+                gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+                
+                bubblesCtx.fillStyle = gradient;
+                bubblesCtx.fill();
+            });
+
+            activeAnimationId = requestAnimationFrame(animateBubbles);
+        };
+
+        const startBubblesAnimation = () => {
+            createBubbles();
+            animateBubbles();
         };
 
         // --- Initial Load ---
