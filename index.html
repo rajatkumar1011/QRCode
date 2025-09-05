@@ -1,808 +1,539 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Generator</title>
-    <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3e%3cpath d='M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm0 4h2v2h-2v-2zm-2-2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2z'/%3e%3c/svg%3e">
-    <!-- Tailwind CSS for styling -->
+    <title>Rajat Kumar | Software Developer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QR Code generation library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- PDF generation library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        :root {
+            --bg-primary: #fdfdff;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --accent-primary: #4f46e5;
+            --accent-secondary: #6366f1;
+            --header-bg: rgba(253, 253, 255, 0.8);
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+            --backdrop-filter: blur(10px);
+        }
+
+        [data-theme='dark'] {
+            --bg-primary: #020617;
+            --bg-secondary: #0f172a;
+            --bg-tertiary: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --accent-primary: #818cf8;
+            --accent-secondary: #a78bfa;
+            --header-bg: rgba(2, 6, 23, 0.7);
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            transition: background-color 0.5s ease;
-        }
-        /* Canvas for animated backgrounds */
-        .background-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1; /* Place it behind all other content */
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-        }
-        .background-canvas.active {
-            opacity: 1;
-        }
-        /* Custom style for the QR code container to center the canvas element */
-        #qrcode-container canvas {
-            display: block;
-            margin: auto;
-            max-width: 100%; /* Ensures the QR code scales down on smaller screens */
-            height: auto !important; /* Maintains aspect ratio */
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        .animated-gradient-btn {
-            background: linear-gradient(-45deg, #ff7e5f, #feb47b, #86A8E7, #91EAE4);
-            background-size: 400% 400%;
-            animation: gradient-flow 10s ease infinite;
-            transition: filter 0.3s ease;
-        }
-        .animated-gradient-btn:hover {
-            filter: brightness(1.1);
-        }
-        @keyframes gradient-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* --- Custom Caret & Focus Style --- */
-        .input:focus {
-            caret-color: #3B82F6; /* Modern blue caret */
-            border-color: #3b82f699; /* Softer border color on focus */
-            animation: breathing-glow 2s infinite ease-in-out;
-            outline: none; /* Ensure no default outline appears */
-        }
-
-        @keyframes breathing-glow {
-          0%, 100% {
-            box-shadow: 0 0 2px 0px rgba(59, 130, 246, 0.2);
-          }
-          50% {
-            box-shadow: 0 0 6px 2px rgba(59, 130, 246, 0.5);
-          }
+        .header-scrolled {
+            background-color: var(--header-bg);
+            backdrop-filter: var(--backdrop-filter);
+            -webkit-backdrop-filter: var(--backdrop-filter);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
         }
         
-        /* --- Typing Animation Cursor --- */
-        #typing-cursor {
-            animation: blink-cursor 1s ease-in-out infinite;
-        }
-        @keyframes blink-cursor {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-
-        /* Light Theme */
-        body.theme-light { background-color: #ffffff; }
-        .theme-light .main-content { color: #000000; }
-        .theme-light .subtitle, .theme-light .footer-text { color: #4a5568; }
-        .theme-light .card { background-color: #f7fafc; border-color: #e2e8f0; }
-        .theme-light .input { background-color: #ffffff; border-color: #cbd5e0; color: #000000; }
-        .theme-light .input::placeholder { color: #a0aec0; }
-        .theme-light .social-icon { color: #4a5568; }
-        .theme-light .social-icon.github:hover { color: #000000; }
-        .theme-light .download-menu { background-color: #ffffff; color: #374151;}
-        .theme-light .download-menu a:hover { background-color: #f3f4f6; }
-
-
-        /* Dark Theme */
-        body.theme-dark { background-color: #000000; }
-        .theme-dark .main-content { color: #ffffff; }
-        .theme-dark .subtitle, .theme-dark .footer-text { color: #a0aec0; }
-        .theme-dark .card { background-color: #111111; border-color: #4a5568; }
-        .theme-dark .input { background-color: #1a202c; border-color: #4a5568; color: #ffffff; }
-        .theme-dark .input::placeholder { color: #718096; }
-        .theme-dark .social-icon { color: #a0aec0; }
-        .theme-dark .social-icon.github:hover { color: #ffffff; }
-        .theme-dark .download-menu { background-color: #1f2937; color: #d1d5db; }
-        .theme-dark .download-menu a:hover { background-color: #374151; }
-
-
-        /* Fancy Themes (Stars, Flow, Constellation) */
-        body.theme-fancy { background-color: #0a0a0a; }
-        .theme-fancy .main-content { color: #ffffff; }
-        .theme-fancy .subtitle, .theme-fancy .footer-text, .theme-fancy .social-icon { color: #ffffff; }
-        .theme-fancy .card { background-color: rgba(17, 17, 17, 0.3); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-color: rgba(128, 128, 128, 0.2); }
-        .theme-fancy .input { background-color: rgba(30, 30, 30, 0.5); border-color: rgba(128, 128, 128, 0.3); color: #ffffff; }
-        .theme-fancy .input::placeholder { color: #ffffff; }
-        .theme-fancy .social-icon.github:hover { opacity: 0.8; }
-        .theme-fancy .social-icon.linkedin:hover { color: #3b82f6; }
-        .theme-fancy .download-menu { background-color: rgba(31, 41, 55, 0.8); backdrop-filter: blur(5px); color: #d1d5db; }
-        .theme-fancy .download-menu a:hover { background-color: rgba(55, 65, 81, 0.8); }
-
-        /* Glow Theme */
-        body.theme-glow {
-            background: linear-gradient(-45deg, #ff7e5f, #feb47b, #86A8E7, #91EAE4);
-            background-size: 400% 400%;
-            animation: gradient-flow 10s ease infinite;
-        }
-        /* Glow Theme Overrides */
-        .theme-glow .main-content,
-        .theme-glow .subtitle,
-        .theme-glow .footer-text,
-        .theme-glow .social-icon {
-            color: #000000;
-        }
-        .theme-glow .card {
-            background-color: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        .theme-glow .input {
-            color: #000000;
-            border-color: rgba(0, 0, 0, 0.3);
-            background-color: rgba(255, 255, 255, 0.5);
-        }
-        .theme-glow .input::placeholder {
-            color: #333333;
-        }
-        .theme-glow .social-icon.github:hover {
-            opacity: 0.7;
-        }
-        .theme-glow .social-icon.linkedin:hover {
-            color: #0a66c2;
+        /* Sleek Theme Toggle Switch */
+        .theme-switch {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: 52px;
+            height: 28px;
+            background-color: var(--bg-tertiary);
+            border-radius: 9999px;
+            cursor: pointer;
+            padding: 4px;
+            transition: background-color 0.2s ease;
         }
 
+        .theme-switch-thumb {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            left: 4px;
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        [data-theme='dark'] .theme-switch-thumb {
+            transform: translateX(24px);
+            background-color: #334155;
+        }
+
+        .theme-switch-thumb .icon {
+            position: absolute;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .theme-switch-thumb .sun-icon {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+            color: #f59e0b;
+        }
+        
+        .theme-switch-thumb .moon-icon {
+            opacity: 0;
+            transform: rotate(-90deg) scale(0);
+            color: #a78bfa;
+        }
+
+        [data-theme='dark'] .theme-switch-thumb .sun-icon {
+            opacity: 0;
+            transform: rotate(90deg) scale(0);
+        }
+
+        [data-theme='dark'] .theme-switch-thumb .moon-icon {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+        }
+
+
+        .card-style {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-color);
+            backdrop-filter: var(--backdrop-filter);
+            -webkit-backdrop-filter: var(--backdrop-filter);
+        }
+
+        #user-bio {
+            min-height: 1.75rem; 
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        .typing-cursor::after {
+            content: '|';
+            animation: blink 1s step-end infinite;
+            color: var(--accent-secondary);
+            margin-left: 0.125rem;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .sleek-btn {
+            background-color: var(--accent-primary);
+            color: #ffffff;
+            font-weight: 600;
+            border-radius: 9999px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+            box-shadow: 0 0 0 0 rgba(0,0,0,0); /* Placeholder for transition */
+        }
+        
+        [data-theme='light'] .sleek-btn {
+            color: var(--bg-primary);
+        }
+
+        .sleek-btn:hover {
+            transform: translateY(-2px);
+            background-color: var(--accent-secondary);
+            box-shadow: 0 10px 20px -5px color-mix(in srgb, var(--accent-primary) 40%, transparent);
+        }
+
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-on-scroll:nth-child(2) { transition-delay: 0.1s; }
+        .reveal-on-scroll:nth-child(3) { transition-delay: 0.2s; }
+        .reveal-on-scroll:nth-child(4) { transition-delay: 0.3s; }
+        
+        .avatar-ring {
+            box-shadow: 0 0 0 4px var(--bg-secondary), 0 0 0 6px var(--accent-primary);
+            animation: pulse-ring 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 4px var(--bg-secondary), 0 0 0 6px var(--accent-primary); }
+            50% { box-shadow: 0 0 0 4px var(--bg-secondary), 0 0 0 12px color-mix(in srgb, var(--accent-primary) 30%, transparent); }
+            100% { box-shadow: 0 0 0 4px var(--bg-secondary), 0 0 0 6px var(--accent-primary); }
+        }
     </style>
 </head>
-<body class="theme-fancy">
-    <!-- Canvases for the animated backgrounds -->
-    <canvas id="stars-canvas" class="background-canvas"></canvas>
-    <canvas id="flow-canvas" class="background-canvas"></canvas>
-    <canvas id="constellation-canvas" class="background-canvas"></canvas>
-    <canvas id="matrix-canvas" class="background-canvas"></canvas>
-    <canvas id="squares-canvas" class="background-canvas"></canvas>
-    <canvas id="bubbles-canvas" class="background-canvas"></canvas>
+<body class="antialiased">
 
-    <!-- LOGO -->
-    <div class="fixed top-4 left-4 z-50">
-         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 main-content" fill="currentColor" viewBox="0 0 24 24" stroke="none">
-             <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm0 4h2v2h-2v-2zm-2-2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
-        </svg>
-    </div>
+    <!-- Header & Navbar -->
+    <header id="header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="." class="text-xl font-bold uppercase tracking-widest">PORTFOLIO</a>
+            
+            <div class="hidden md:flex flex-grow justify-center items-center text-[var(--text-secondary)] space-x-8">
+                <a href="#hero" class="hover:text-[var(--accent-secondary)] transition-colors text-sm font-medium">About</a>
+                <a href="#projects" class="hover:text-[var(--accent-secondary)] transition-colors text-sm font-medium">Projects</a>
+                <a href="#contact" class="hover:text-[var(--accent-secondary)] transition-colors text-sm font-medium">Contact</a>
+            </div>
 
-    <!-- THEME SWITCHER -->
-    <div class="fixed top-4 right-4 z-50">
-        <div class="relative" id="theme-switcher">
-            <button id="theme-toggle-btn" class="p-2 bg-gray-800/50 backdrop-blur-md rounded-full text-white hover:bg-gray-700/70">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+            <div class="hidden md:flex justify-end">
+                <button class="theme-toggle" aria-label="Toggle theme">
+                    <div class="theme-switch">
+                       <div class="theme-switch-thumb">
+                            <i data-lucide="sun" class="w-4 h-4 icon sun-icon"></i>
+                            <i data-lucide="moon" class="w-4 h-4 icon moon-icon"></i>
+                       </div>
+                    </div>
+                </button>
+            </div>
+
+            <button id="mobile-menu-button" class="md:hidden">
+                <i data-lucide="menu"></i>
             </button>
-            <div id="theme-options" class="absolute right-0 mt-2 w-36 bg-gray-800/70 backdrop-blur-md rounded-lg shadow-xl overflow-hidden hidden">
-                <button data-theme="light" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Light</button>
-                <button data-theme="dark" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Dark</button>
-                <button data-theme="glow" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Glow</button>
-                <button data-theme="stars" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Stars</button>
-                <button data-theme="squares" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Squares</button>
-                <button data-theme="bubbles" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Bubbles</button>
-                <button data-theme="flow" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Flow Field</button>
-                <button data-theme="matrix" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Digital Rain</button>
-                <button data-theme="constellation" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Constellation</button>
+        </nav>
+    </header>
+    
+    <div id="mobile-menu" class="hidden fixed inset-0 bg-[var(--bg-primary)] z-40 md:hidden">
+        <div class="flex justify-end p-6">
+            <button id="close-mobile-menu-button"><i data-lucide="x"></i></button>
+        </div>
+        <div class="flex flex-col items-center justify-center space-y-8 h-full text-xl">
+            <a href="#hero" class="mobile-menu-link">About</a>
+            <a href="#projects" class="mobile-menu-link">Projects</a>
+            <a href="#contact" class="mobile-menu-link">Contact</a>
+            <div class="flex items-center space-x-4 pt-4">
+                 <button class="theme-toggle" aria-label="Toggle theme">
+                    <div class="theme-switch">
+                        <div class="theme-switch-thumb">
+                           <i data-lucide="sun" class="w-4 h-4 icon sun-icon"></i>
+                           <i data-lucide="moon" class="w-4 h-4 icon moon-icon"></i>
+                        </div>
+                    </div>
+                </button>
             </div>
         </div>
     </div>
 
-    <main class="w-full max-w-md mx-auto p-6 md:p-8 z-10 flex flex-col min-h-screen justify-center">
-        <div>
-            <div class="text-center mb-8">
-                <h1 class="text-3xl md:text-4xl font-bold main-content">QR Code Generator</h1>
-                <p class="subtitle mt-2 whitespace-nowrap overflow-hidden"><span id="animated-subtitle"></span><span id="typing-cursor">|</span></p>
-            </div>
+    <main class="container mx-auto px-6 pt-32 md:pt-48">
 
-            <div class="card p-6 rounded-2xl shadow-2xl border">
-                <div class="space-y-4">
-                    <div>
-                        <label for="text-input" class="sr-only">Enter text or URL</label>
-                        <input type="text" id="text-input" placeholder="Enter text or a URL..." class="input w-full px-4 py-3 text-base border rounded-lg focus:outline-none transition-shadow">
-                    </div>
-                    <!-- Size Slider -->
-                    <div class="pt-2">
-                        <div class="flex justify-between items-center mb-1">
-                            <label for="size-slider" class="text-sm font-medium main-content">QR Code Size</label>
-                            <span id="size-value" class="text-sm font-mono subtitle">111px</span>
-                        </div>
-                        <input type="range" id="size-slider" min="100" max="369" value="111" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:bg-gray-700">
-                    </div>
-                    <button id="generate-btn" class="w-full animated-gradient-btn text-black font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform active:scale-95 mt-4">
-                        Generate QR Code
-                    </button>
-                </div>
-                <div id="qr-wrapper" class="mt-6 text-center">
-                    <p id="error-message" class="text-red-400 text-sm mb-4 hidden"></p>
-                    <div id="qrcode-container" class="mx-auto bg-transparent rounded-lg flex items-center justify-center hidden">
-                         <div id="qrcode" class="p-2 bg-white rounded-md inline-block"></div>
-                    </div>
-                    <!-- Download Button Dropdown -->
-                    <div id="download-wrapper" class="relative inline-block text-left mt-4 hidden">
-                        <div>
-                            <button type="button" id="download-menu-btn" class="inline-flex justify-center w-full rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500">
-                                Download
-                                <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div id="download-options" class="download-menu origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="download-menu-btn">
-                            <div class="py-1" role="none">
-                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="png">PNG</a>
-                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="jpg">JPG / JPEG</a>
-                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="pdf">PDF</a>
-                            </div>
-                        </div>
-                    </div>
+        <section id="hero" class="text-center max-w-4xl mx-auto">
+            <div class="relative w-32 h-32 md:w-36 md:h-36 rounded-full mx-auto mb-6 avatar-ring">
+                <img id="user-avatar" src="https://placehold.co/128x128/e5e7eb/4b5563?text=Avatar" alt="User Avatar" class="w-full h-full rounded-full object-cover">
+            </div>
+            <h1 class="text-4xl md:text-6xl font-extrabold leading-tight mb-4 reveal-on-scroll">
+                Hi, I'm <span id="user-name" class="text-[var(--accent-primary)]"></span>
+            </h1>
+            <p id="user-bio" class="text-lg md:text-xl text-[var(--text-secondary)] max-w-3xl mx-auto mb-8 reveal-on-scroll"></p>
+            <div class="flex justify-center items-center space-x-4 reveal-on-scroll">
+                <a id="explore-work-btn" href="#projects" class="sleek-btn py-3 px-6 text-base">
+                    Explore My Work
+                </a>
+            </div>
+        </section>
+
+        <section id="projects" class="py-24 md:py-32">
+            <div class="text-center max-w-2xl mx-auto mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4 reveal-on-scroll">My Projects</h2>
+                <p id="projects-subtitle" class="text-md md:text-lg text-[var(--text-secondary)] reveal-on-scroll"></p>
+            </div>
+            <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div id="loader" class="col-span-full flex justify-center items-center h-40">
+                    <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[var(--accent-primary)]"></div>
                 </div>
             </div>
-            <footer class="text-center mt-8 space-y-2">
-                <div class="flex justify-center items-center space-x-4">
-                    <a href="https://www.linkedin.com/comm/mynetwork/discovery-see-all?usecase=PEOPLE_FOLLOWS&followMember=rajatkumar7" target="_blank" rel="noopener noreferrer" class="social-icon linkedin" aria-label="LinkedIn Profile">
-                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.71c-.966 0-1.75-.783-1.75-1.75s.784-1.75 1.75-1.75 1.75.783 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.71h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                    </a>
-                    <a href="https://github.com/rajatkumar1011" target="_blank" rel="noopener noreferrer" class="social-icon github" aria-label="GitHub Profile">
-                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.492.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" /></svg>
-                    </a>
-                </div>
-                <p class="text-sm footer-text">
-                    Made with ❤️ by Rajat Kumar
+            <div id="error-message" class="hidden col-span-full text-center text-red-500 p-8 bg-red-50 rounded-lg"></div>
+        </section>
+
+        <section id="contact" class="py-24 rounded-2xl text-center reveal-on-scroll card-style">
+             <div class="container mx-auto px-6 max-w-2xl">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">Get In Touch</h2>
+                <p class="text-md md:text-lg text-[var(--text-secondary)] mb-8">
+                    I'm always looking for new opportunities to collaborate on exciting projects. Whether you have a question, a proposal, or just want to connect, my inbox is always open. I look forward to hearing from you.
                 </p>
-                <p class="text-xs footer-text pt-2">
-                    Copyright © 2025 Rajat Kumar. All Rights Reserved.
-                </p>
-            </footer>
-        </div>
+                <a id="contact-footer-link" href="#" target="_blank" rel="noopener noreferrer" class="sleek-btn py-3 px-8 text-lg inline-block">
+                    Contact Me
+                </a>
+            </div>
+        </section>
+
     </main>
 
+    <footer id="page-footer" class="mt-24 pb-8">
+        <div class="container mx-auto px-6 text-center text-sm text-[var(--text-secondary)]">
+            <div class="flex justify-center space-x-6 mb-4">
+                 <a id="linkedin-link" href="#" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--accent-secondary)] transition-colors">
+                    <i data-lucide="linkedin" class="w-5 h-5"></i>
+                </a>
+                <a id="github-footer-link" href="#" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--accent-secondary)] transition-colors">
+                    <i data-lucide="github" class="w-5 h-5"></i>
+                </a>
+            </div>
+            <p>&copy; <span id="current-year"></span> <span id="footer-user-name"></span>. All Rights Reserved.</p>
+        </div>
+    </footer>
+
     <script>
-        // --- Element Selection ---
-        const generateBtn = document.getElementById('generate-btn');
-        const textInput = document.getElementById('text-input');
-        const qrcodeContainer = document.getElementById('qrcode-container');
-        const qrcodeDiv = document.getElementById('qrcode');
-        const errorMessage = document.getElementById('error-message');
-        const sizeSlider = document.getElementById('size-slider');
-        const sizeValueDisplay = document.getElementById('size-value');
-        
-        // --- Download Logic ---
-        const downloadWrapper = document.getElementById('download-wrapper');
-        const downloadMenuBtn = document.getElementById('download-menu-btn');
-        const downloadOptions = document.getElementById('download-options');
+        // --- CONFIGURATION ---
+        const GITHUB_USERNAME = "rajatkumar1011";
+        const LINKEDIN_URL = "https://www.linkedin.com/in/rajatkumar7/";
+        const CONTACT_EMAIL_LINK = "https://mail.google.com/mail/u/0/?fs=1&to=rajatkumar7x@gmail.com&tf=cm";
 
-        const generateQRCode = () => {
-            const data = textInput.value.trim();
-            const qrSize = parseInt(sizeSlider.value, 10);
+        // --- DOM ELEMENTS ---
+        const elements = {
+            userName: document.getElementById('user-name'),
+            footerUserName: document.getElementById('footer-user-name'),
+            userBio: document.getElementById('user-bio'),
+            userAvatar: document.getElementById('user-avatar'),
+            // profileLinkNav: document.getElementById('profile-link-nav'),
+            // profileLinkMobile: document.getElementById('profile-link-mobile'),
+            contactFooterLink: document.getElementById('contact-footer-link'),
+            projectsContainer: document.getElementById('projects-container'),
+            loader: document.getElementById('loader'),
+            errorMessage: document.getElementById('error-message'),
+            currentYear: document.getElementById('current-year'),
+            header: document.getElementById('header'),
+            mobileMenuButton: document.getElementById('mobile-menu-button'),
+            mobileMenu: document.getElementById('mobile-menu'),
+            closeMobileMenuButton: document.getElementById('close-mobile-menu-button'),
+            mobileMenuLinks: document.querySelectorAll('.mobile-menu-link'),
+            linkedinLink: document.getElementById('linkedin-link'),
+            githubFooterLink: document.getElementById('github-footer-link'),
+            themeToggles: document.querySelectorAll('.theme-toggle'),
+            projectsSubtitle: document.getElementById('projects-subtitle'),
+        };
 
-            qrcodeContainer.classList.add('hidden');
-            downloadWrapper.classList.add('hidden');
-            errorMessage.classList.add('hidden');
-            
-            if (!data) {
-                errorMessage.textContent = 'Please enter text or a URL to generate a QR code.';
-                errorMessage.classList.remove('hidden');
+        // --- GITHUB API ---
+        async function fetchGitHubAPI(endpoint) {
+            try {
+                const response = await fetch(`https://api.github.com/${endpoint}`);
+                if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`Failed to fetch GitHub data from ${endpoint}:`, error);
+                displayError(`Could not fetch data. Please check the console.`);
+                return null;
+            }
+        }
+
+        // --- UI RENDERING ---
+        function populateUserInfo(userData) {
+            if (!userData) return;
+            const name = userData.name || userData.login;
+            elements.userName.textContent = name;
+            elements.footerUserName.textContent = name;
+            elements.userAvatar.src = userData.avatar_url;
+            elements.userAvatar.alt = `${name}'s Avatar`;
+            elements.githubFooterLink.href = userData.html_url;
+        }
+
+        function createProjectCards(repos) {
+            if (!repos || repos.length === 0) {
+                elements.projectsContainer.innerHTML = `<p class="col-span-full text-center text-[var(--text-secondary)]">No public repositories found.</p>`;
                 return;
             }
-            
-            qrcodeDiv.innerHTML = ''; // Clear previous QR code before generating a new one
 
-            const errorCorrectionLevels = ['L', 'M', 'Q', 'H'];
-            const correctLevelMap = {
-                'L': QRCode.CorrectLevel.L,
-                'M': QRCode.CorrectLevel.M,
-                'Q': QRCode.CorrectLevel.Q,
-                'H': QRCode.CorrectLevel.H,
-            };
+            repos.forEach((repo, index) => {
+                const card = document.createElement('div');
+                card.className = 'card-style p-6 rounded-lg border flex flex-col transition-transform duration-300 hover:-translate-y-1 reveal-on-scroll';
+                card.style.transitionDelay = `${index * 100}ms`;
 
-            let success = false;
-            for (const level of errorCorrectionLevels) {
-                try {
-                    new QRCode(qrcodeDiv, {
-                        text: data,
-                        width: qrSize,
-                        height: qrSize,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: correctLevelMap[level]
-                    });
-                    success = true;
-                    console.log(`Successfully generated QR Code with error correction level: ${level}`);
-                    break; // Exit loop on first successful generation
-                } catch (error) {
-                    console.warn(`Failed to generate with level ${level}. Trying next level.`);
-                    qrcodeDiv.innerHTML = ''; // Clean up failed attempt
-                }
-            }
+                const language = repo.language ? `<span class="text-xs font-semibold bg-[var(--bg-tertiary)] text-[var(--accent-primary)] px-2 py-1 rounded-full">${repo.language}</span>` : '';
+                const deploymentUrl = repo.name.toLowerCase() === 'rajatkumar1011.github.io' ? `https://${repo.name}` : `https://rajatkumar1.me/${repo.name}`;
+                const openLink = repo.homepage || deploymentUrl;
 
-            if (success) {
-                // Adjust container size to fit the new QR code
-                qrcodeContainer.classList.remove('hidden');
-                qrcodeContainer.classList.add('fade-in');
-                downloadWrapper.classList.remove('hidden');
-                downloadWrapper.classList.add('fade-in');
-            } else {
-                console.error("QR Code generation failed at all error correction levels.");
-                errorMessage.textContent = 'Could not generate QR code. The input is too long.';
-                errorMessage.classList.remove('hidden');
-            }
-        };
-
-        generateBtn.addEventListener('click', generateQRCode);
-        textInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') generateQRCode();
-        });
-        
-        sizeSlider.addEventListener('input', () => {
-            sizeValueDisplay.textContent = `${sizeSlider.value}px`;
-        });
-
-        const downloadQR = (format) => {
-            const canvas = qrcodeDiv.querySelector('canvas');
-            if (!canvas) return;
-
-            const padding = 24; // Creates a 12px border on each side
-            const borderRadius = 12;
-
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-
-            tempCanvas.width = canvas.width + padding;
-            tempCanvas.height = canvas.height + padding;
-
-            // Draw the rounded white background
-            tempCtx.fillStyle = '#ffffff';
-            tempCtx.beginPath();
-            tempCtx.moveTo(borderRadius, 0);
-            tempCtx.lineTo(tempCanvas.width - borderRadius, 0);
-            tempCtx.quadraticCurveTo(tempCanvas.width, 0, tempCanvas.width, borderRadius);
-            tempCtx.lineTo(tempCanvas.width, tempCanvas.height - borderRadius);
-            tempCtx.quadraticCurveTo(tempCanvas.width, tempCanvas.height, tempCanvas.width - borderRadius, tempCanvas.height);
-            tempCtx.lineTo(borderRadius, tempCanvas.height);
-            tempCtx.quadraticCurveTo(0, tempCanvas.height, 0, tempCanvas.height - borderRadius);
-            tempCtx.lineTo(0, borderRadius);
-            tempCtx.quadraticCurveTo(0, 0, borderRadius, 0);
-            tempCtx.closePath();
-            tempCtx.fill();
-            
-            // Draw the QR code onto the new canvas
-            tempCtx.drawImage(canvas, padding / 2, padding / 2);
-
-            const link = document.createElement('a');
-
-            switch (format) {
-                case 'png':
-                    link.download = 'qrcode.png';
-                    link.href = tempCanvas.toDataURL('image/png');
-                    link.click();
-                    break;
-                case 'jpg':
-                    link.download = 'qrcode.jpeg';
-                    link.href = tempCanvas.toDataURL('image/jpeg', 0.95);
-                    link.click();
-                    break;
-                case 'pdf':
-                    const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-                    const imgData = tempCanvas.toDataURL('image/png');
-                    const qrSizeMM = 60 * (tempCanvas.width / 224); // Scale PDF size based on selected size
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const x = (pdfWidth - qrSizeMM) / 2;
-                    pdf.addImage(imgData, 'PNG', x, 20, qrSizeMM, qrSizeMM);
-                    pdf.save('qrcode.pdf');
-                    break;
-            }
-        };
-
-        downloadMenuBtn.addEventListener('click', () => {
-            downloadOptions.classList.toggle('hidden');
-        });
-
-        downloadOptions.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (e.target.classList.contains('download-format-btn')) {
-                const format = e.target.dataset.format;
-                downloadQR(format);
-                downloadOptions.classList.add('hidden'); 
-            }
-        });
-
-
-        // --- THEME SWITCHER LOGIC ---
-        const themeToggleButton = document.getElementById('theme-toggle-btn');
-        const themeOptions = document.getElementById('theme-options');
-        const themeButtons = document.querySelectorAll('.theme-btn');
-        const canvases = {
-            stars: document.getElementById('stars-canvas'),
-            flow: document.getElementById('flow-canvas'),
-            constellation: document.getElementById('constellation-canvas'),
-            matrix: document.getElementById('matrix-canvas'),
-            squares: document.getElementById('squares-canvas'),
-            bubbles: document.getElementById('bubbles-canvas')
-        };
-
-        let activeAnimationId = null;
-
-        const stopAllAnimations = () => {
-            if (activeAnimationId) {
-                cancelAnimationFrame(activeAnimationId);
-                activeAnimationId = null;
-            }
-            Object.values(canvases).forEach(c => {
-                 const ctx = c.getContext('2d');
-                 ctx.clearRect(0, 0, c.width, c.height);
-                 c.classList.remove('active');
+                card.innerHTML = `
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="text-lg font-bold text-[var(--text-primary)] pr-4">${repo.name}</h3>
+                            <div class="flex items-center space-x-3 flex-shrink-0">
+                                <a href="${openLink}" target="_blank" rel="noopener noreferrer" class="text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] transition-colors" aria-label="Open project deployment">
+                                    <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+                                </a>
+                                <a href="${repo.html_url}" target="_blank" rel="noopener noreferrer" class="text-[var(--text-secondary)] hover:text-[var(--accent-secondary)] transition-colors" aria-label="View on GitHub">
+                                    <i data-lucide="github" class="w-5 h-5"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <p class="text-[var(--text-secondary)] text-sm mb-4 min-h-[40px]">
+                            ${repo.description || 'No description available.'}
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-[var(--border-color)] flex justify-between items-center text-sm text-[var(--text-secondary)]">
+                        <div class="flex space-x-4">
+                            <div class="flex items-center space-x-1"><i data-lucide="star" class="w-4 h-4 text-yellow-500"></i><span>${repo.stargazers_count}</span></div>
+                            <div class="flex items-center space-x-1"><i data-lucide="git-fork" class="w-4 h-4"></i><span>${repo.forks_count}</span></div>
+                        </div>
+                        ${language}
+                    </div>
+                `;
+                elements.projectsContainer.appendChild(card);
             });
-        };
+        }
 
-        const setTheme = (theme) => {
-            document.body.className = ''; // Clear all classes
-            stopAllAnimations();
+        function displayError(message) {
+            elements.loader.style.display = 'none';
+            elements.errorMessage.textContent = `Error: ${message}`;
+            elements.errorMessage.classList.remove('hidden');
+        }
 
-            if (theme === 'light') {
-                document.body.classList.add('theme-light');
-            } else if (theme === 'dark') {
-                document.body.classList.add('theme-dark');
-            } else {
-                document.body.classList.add('theme-fancy');
-                if (theme === 'glow') {
-                    document.body.classList.add('theme-glow');
-                } else if (theme === 'stars') {
-                    canvases.stars.classList.add('active');
-                    startStarsAnimation();
-                } else if (theme === 'flow') {
-                    canvases.flow.classList.add('active');
-                    startFlowAnimation();
-                } else if (theme === 'constellation') {
-                    canvases.constellation.classList.add('active');
-                    startConstellationAnimation();
-                } else if (theme === 'matrix') {
-                    canvases.matrix.classList.add('active');
-                    startMatrixAnimation();
-                } else if (theme === 'squares') {
-                    canvases.squares.classList.add('active');
-                    startSquaresAnimation();
-                } else if (theme === 'bubbles') {
-                    canvases.bubbles.classList.add('active');
-                    startBubblesAnimation();
-                }
-            }
-            themeOptions.classList.add('hidden');
-        };
-
-        themeToggleButton.addEventListener('click', () => {
-            themeOptions.classList.toggle('hidden');
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (!document.getElementById('theme-switcher').contains(e.target)) {
-                 themeOptions.classList.add('hidden');
-            }
-            if (!document.getElementById('download-wrapper').contains(e.target)) {
-                 downloadOptions.classList.add('hidden');
-            }
-        });
-
-        themeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const theme = button.getAttribute('data-theme');
-                setTheme(theme);
-            });
-        });
-
-        // --- BACKGROUND ANIMATION LOGIC ---
-        const resizeAllCanvases = () => {
-             Object.values(canvases).forEach(c => {
-                 c.width = window.innerWidth;
-                 c.height = window.innerHeight;
-             });
-        };
-        
-        window.addEventListener('resize', () => {
-            resizeAllCanvases();
-            if (document.body.classList.contains('theme-fancy')) {
-                if (canvases.stars.classList.contains('active')) { createStars(); }
-                if (canvases.flow.classList.contains('active')) { createParticles(); }
-                if (canvases.constellation.classList.contains('active')) { createConstellationParticles(); }
-                if (canvases.matrix.classList.contains('active')) { setupMatrix(); }
-                if (canvases.bubbles.classList.contains('active')) { createBubbles(); }
-                // The 'squares' animation doesn't need a reset function as it's purely generative
-            }
-        });
-        resizeAllCanvases();
-        
-        // --- Aurora Animation --- - REMOVED
-
-        // --- Stars Animation ---
-        let stars = [];
-        const starsCtx = canvases.stars.getContext('2d');
-        const createStars = () => { stars = []; for (let i = 0; i < 200; i++) { stars.push({ x: Math.random() * canvases.stars.width, y: Math.random() * canvases.stars.height, radius: Math.random() * 1.5, alpha: Math.random(), dAlpha: (Math.random() * 0.02) - 0.01 }); } };
-        const animateStars = () => { starsCtx.clearRect(0, 0, canvases.stars.width, canvases.stars.height); stars.forEach(s => { s.alpha += s.dAlpha; if (s.alpha <= 0 || s.alpha >= 1) s.dAlpha *= -1; starsCtx.beginPath(); starsCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2); starsCtx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`; starsCtx.fill(); }); activeAnimationId = requestAnimationFrame(animateStars); };
-        const startStarsAnimation = () => { createStars(); animateStars(); };
-        
-        // --- Flow Field Animation ---
-        let particles = [];
-        const flowCtx = canvases.flow.getContext('2d');
-        const createParticles = () => { 
-            particles = []; 
-            // Reduced particle count for a cleaner look, scales with screen width
-            const particleCount = Math.floor(canvases.flow.width / 3.5);
-            for (let i = 0; i < particleCount; i++) { 
-                particles.push({ 
-                    x: Math.random() * canvases.flow.width, 
-                    y: Math.random() * canvases.flow.height, 
-                    speed: Math.random() * 0.4 + 0.1, // Slightly slower speed
-                    radius: Math.random() * 1.2 + 0.8 // Particles are now circles with varying radii
-                }); 
-            } 
-        };
-        const animateFlow = (timestamp) => {
-            const time = timestamp * 0.0002; // Slower time evolution for a more gentle flow
-            // Faster fade-out for shorter, sleeker trails
-            flowCtx.fillStyle = 'rgba(10, 10, 10, 0.08)'; 
-            flowCtx.fillRect(0, 0, canvases.flow.width, canvases.flow.height);
-            flowCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            particles.forEach(p => {
-                // Smoother angle calculation for more graceful curves
-                const angle = (Math.cos(p.y * 0.004) + Math.sin(p.x * 0.004 + time)) * 2;
-                p.x += Math.cos(angle) * p.speed; p.y += Math.sin(angle) * p.speed;
-
-                // Improved wrap-around logic for seamless looping
-                if (p.x < -10) p.x = canvases.flow.width + 10; 
-                if (p.x > canvases.flow.width + 10) p.x = -10;
-                if (p.y < -10) p.y = canvases.flow.height + 10; 
-                if (p.y > canvases.flow.height + 10) p.y = -10;
-                
-                // Draw particles as circles instead of squares for a softer look
-                flowCtx.beginPath();
-                flowCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                flowCtx.fill();
-            });
-            activeAnimationId = requestAnimationFrame(animateFlow);
-        };
-        const startFlowAnimation = () => { createParticles(); flowCtx.fillStyle = 'black'; flowCtx.fillRect(0, 0, canvases.flow.width, canvases.flow.height); animateFlow(0); };
-
-        // --- Constellation Animation ---
-        let constellationParticles = [];
-        const constellationCtx = canvases.constellation.getContext('2d');
-        const createConstellationParticles = () => {
-            const particleCount = Math.floor(canvases.constellation.width / 15);
-            constellationParticles = [];
-            for (let i = 0; i < particleCount; i++) {
-                constellationParticles.push({
-                    x: Math.random() * canvases.constellation.width,
-                    y: Math.random() * canvases.constellation.height,
-                    vx: (Math.random() - 0.5) * 0.5,
-                    vy: (Math.random() - 0.5) * 0.5,
-                    radius: Math.random() * 1.5 + 1
-                });
-            }
-        };
-        const animateConstellation = () => {
-            constellationCtx.clearRect(0, 0, canvases.constellation.width, canvases.constellation.height);
-            constellationParticles.forEach(p => {
-                p.x += p.vx; p.y += p.vy;
-                if (p.x < 0 || p.x > canvases.constellation.width) p.vx *= -1;
-                if (p.y < 0 || p.y > canvases.constellation.height) p.vy *= -1;
-                constellationCtx.beginPath();
-                constellationCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                constellationCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                constellationCtx.fill();
-            });
-
-            constellationCtx.beginPath();
-            for (let i = 0; i < constellationParticles.length; i++) {
-                for (let j = i; j < constellationParticles.length; j++) {
-                    const dist = Math.sqrt(Math.pow(constellationParticles[i].x - constellationParticles[j].x, 2) + Math.pow(constellationParticles[i].y - constellationParticles[j].y, 2));
-                    if (dist < 100) {
-                        constellationCtx.moveTo(constellationParticles[i].x, constellationParticles[i].y);
-                        constellationCtx.lineTo(constellationParticles[j].x, constellationParticles[j].y);
+        // --- TYPEWRITER EFFECT ---
+        function setupTypewriterCycle(element, text) {
+            if (!element) return;
+            const typeAnimation = (onComplete) => {
+                let i = 0;
+                element.textContent = '';
+                element.classList.add('typing-cursor');
+                const type = () => {
+                    if (i < text.length) {
+                        element.textContent += text.charAt(i++);
+                        setTimeout(type, 50);
+                    } else {
+                        element.classList.remove('typing-cursor');
+                        if (onComplete) onComplete();
                     }
-                }
-            }
-            constellationCtx.lineWidth = 0.5;
-            constellationCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-            constellationCtx.stroke();
-
-            activeAnimationId = requestAnimationFrame(animateConstellation);
-        };
-        const startConstellationAnimation = () => {
-            createConstellationParticles();
-            animateConstellation();
-        };
-
-        // --- Digital Rain (Matrix) Animation ---
-        const matrixCtx = canvases.matrix.getContext('2d');
-        let drops = [];
-        let fontSize = 16;
-        let columns = 0;
-
-        const setupMatrix = () => {
-            columns = Math.floor(canvases.matrix.width / fontSize);
-            drops = [];
-            for (let i = 0; i < columns; i++) {
-                drops[i] = Math.floor(Math.random() * canvases.matrix.height / fontSize);
-            }
-        };
-
-        const animateMatrix = () => {
-            matrixCtx.fillStyle = 'rgba(10, 10, 10, 0.05)';
-            matrixCtx.fillRect(0, 0, canvases.matrix.width, canvases.matrix.height);
-            
-            matrixCtx.fillStyle = '#00f400'; // Classic matrix green
-            matrixCtx.font = `${fontSize}px monospace`;
-
-            for (let i = 0; i < drops.length; i++) {
-                const text = Math.random() < 0.5 ? '0' : '1';
-                matrixCtx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-                if (drops[i] * fontSize > canvases.matrix.height && Math.random() > 0.975) {
-                    drops[i] = 0;
-                }
-                drops[i] += 0.5;
-            }
-            activeAnimationId = requestAnimationFrame(animateMatrix);
-        };
-
-        const startMatrixAnimation = () => {
-            setupMatrix();
-            animateMatrix();
-        };
-        
-        // --- Squares Animation ---
-        const squaresCtx = canvases.squares.getContext('2d');
-        let squareParticles = [];
-
-        const animateSquares = () => {
-            squaresCtx.fillStyle = 'rgba(10, 10, 10, 0.1)';
-            squaresCtx.fillRect(0, 0, canvases.squares.width, canvases.squares.height);
-
-            // Add a new square occasionally
-            if (Math.random() > 0.96) {
-                squareParticles.push({
-                    x: Math.random() * canvases.squares.width,
-                    y: Math.random() * canvases.squares.height,
-                    size: 0,
-                    maxSize: Math.random() * 100 + 50,
-                    opacity: 1,
-                    speed: Math.random() * 0.5 + 0.2
-                });
-            }
-
-            // Animate and draw squares
-            for (let i = squareParticles.length - 1; i >= 0; i--) {
-                const p = squareParticles[i];
-                p.size += p.speed;
-                p.opacity = 1 - (p.size / p.maxSize);
-
-                if (p.opacity <= 0) {
-                    squareParticles.splice(i, 1);
-                } else {
-                    squaresCtx.strokeStyle = `rgba(255, 255, 255, ${p.opacity})`;
-                    squaresCtx.lineWidth = 1.5;
-                    squaresCtx.strokeRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-                }
-            }
-
-            activeAnimationId = requestAnimationFrame(animateSquares);
-        };
-        
-        const startSquaresAnimation = () => {
-            squareParticles = [];
-            animateSquares();
-        };
-
-        // --- Bubbles Animation ---
-        const bubblesCtx = canvases.bubbles.getContext('2d');
-        let bubbleParticles = [];
-
-        const createBubbles = () => {
-            const bubbleCount = Math.floor(canvases.bubbles.width / 35);
-            bubbleParticles = [];
-            for (let i = 0; i < bubbleCount; i++) {
-                bubbleParticles.push({
-                    x: Math.random() * canvases.bubbles.width,
-                    y: canvases.bubbles.height + Math.random() * 100, // Start below the screen
-                    radius: Math.random() * 20 + 10, // Varying sizes
-                    vx: (Math.random() - 0.5) * 0.5, // Gentle side-to-side drift
-                    vy: -(Math.random() * 1 + 0.5), // Upward speed
-                    opacity: Math.random() * 0.4 + 0.1
-                });
-            }
-        };
-
-        const animateBubbles = () => {
-            bubblesCtx.clearRect(0, 0, canvases.bubbles.width, canvases.bubbles.height);
-            
-            bubbleParticles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-
-                // Reset bubble when it goes off screen
-                if (p.y < -p.radius * 2) {
-                    p.y = canvases.bubbles.height + p.radius;
-                    p.x = Math.random() * canvases.bubbles.width;
-                }
-                if (p.x < -p.radius || p.x > canvases.bubbles.width + p.radius) {
-                    p.vx *= -1; // Bounce off sides
-                }
-
-                bubblesCtx.beginPath();
-                bubblesCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                
-                // Create a glossy effect with a radial gradient
-                const gradient = bubblesCtx.createRadialGradient(p.x - p.radius * 0.3, p.y - p.radius * 0.3, 0, p.x, p.y, p.radius);
-                gradient.addColorStop(0, `rgba(255, 255, 255, ${p.opacity * 0.8})`);
-                gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
-                
-                bubblesCtx.fillStyle = gradient;
-                bubblesCtx.fill();
-            });
-
-            activeAnimationId = requestAnimationFrame(animateBubbles);
-        };
-
-        const startBubblesAnimation = () => {
-            createBubbles();
-            animateBubbles();
-        };
-        
-        // --- TYPEWRITER ANIMATION ---
-        const setupTypewriter = () => {
-            const subtitleEl = document.getElementById('animated-subtitle');
-            if (!subtitleEl) return;
-            const text = "Simply enter text or a URL to create your QR code.";
-            const typeSpeed = 80;
-            const eraseSpeed = 30;
-            const pauseEnd = 7890;
-            const pauseStart = 1500;
-
-            let charIndex = 0;
-            let isDeleting = false;
-
-            const loop = () => {
-                const currentText = text;
-                let timeoutSpeed = typeSpeed;
-
-                if (isDeleting) {
-                    timeoutSpeed = eraseSpeed;
-                    subtitleEl.textContent = currentText.substring(0, charIndex - 1);
-                    charIndex--;
-                } else {
-                    subtitleEl.textContent = currentText.substring(0, charIndex + 1);
-                    charIndex++;
-                }
-
-                if (!isDeleting && charIndex === currentText.length) {
-                    // Pause at end
-                    timeoutSpeed = pauseEnd;
-                    isDeleting = true;
-                } else if (isDeleting && charIndex === 0) {
-                    // Pause at start
-                    timeoutSpeed = pauseStart;
-                    isDeleting = false;
-                }
-
-                setTimeout(loop, timeoutSpeed);
+                };
+                type();
             };
-            loop();
-        };
 
+            const deleteAnimation = (onComplete) => {
+                let i = text.length;
+                element.classList.add('typing-cursor');
+                const del = () => {
+                    if (i > 0) {
+                        element.textContent = text.substring(0, --i);
+                        setTimeout(del, 30);
+                    } else {
+                        element.classList.remove('typing-cursor');
+                        if (onComplete) onComplete();
+                    }
+                };
+                del();
+            };
 
-        // --- Initial Load ---
-        setTheme('dark'); // Default theme
-        setupTypewriter();
+            const scheduleNextCycle = () => {
+                setTimeout(() => deleteAnimation(() => setTimeout(() => typeAnimation(scheduleNextCycle), 500)), 15000);
+            };
+
+            setTimeout(() => typeAnimation(scheduleNextCycle), 1000);
+        }
+
+        function typeSingleLine(element, text) {
+            if (element.dataset.typed) return; // Prevent re-typing
+            element.dataset.typed = 'true';
+            element.textContent = '';
+            element.classList.add('typing-cursor');
+            let i = 0;
+            function typeChar() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i++);
+                    setTimeout(typeChar, 50);
+                } else {
+                    element.classList.remove('typing-cursor');
+                }
+            }
+            typeChar();
+        }
+
+        // --- SCROLL ANIMATIONS ---
+        function setupScrollAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        if (entry.target.id === 'projects-subtitle') {
+                            typeSingleLine(entry.target, "Here are a few projects I've worked on recently.");
+                        }
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+        }
+
+        // --- EVENT HANDLERS & HELPERS ---
+        function handleScroll() {
+            if (window.scrollY > 50) {
+                elements.header.classList.add('header-scrolled');
+            } else {
+                elements.header.classList.remove('header-scrolled');
+            }
+        }
+        
+        function toggleMobileMenu() {
+            elements.mobileMenu.classList.toggle('hidden');
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+
+        // --- INITIALIZATION ---
+        async function init() {
+            elements.currentYear.textContent = new Date().getFullYear();
+            window.addEventListener('scroll', handleScroll);
+            elements.mobileMenuButton.addEventListener('click', toggleMobileMenu);
+            elements.closeMobileMenuButton.addEventListener('click', toggleMobileMenu);
+            elements.mobileMenuLinks.forEach(link => link.addEventListener('click', toggleMobileMenu));
+            
+            elements.themeToggles.forEach(btn => btn.addEventListener('click', toggleTheme));
+            
+            let savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme !== 'light' && savedTheme !== 'dark') {
+                savedTheme = 'light';
+            }
+            setTheme(savedTheme);
+            
+            elements.linkedinLink.href = LINKEDIN_URL;
+            elements.contactFooterLink.href = CONTACT_EMAIL_LINK;
+
+            const userData = await fetchGitHubAPI(`users/${GITHUB_USERNAME}`);
+            if (userData) {
+                populateUserInfo(userData);
+                setupTypewriterCycle(elements.userBio, userData.bio || 'A passionate developer creating amazing things.');
+            } else {
+                elements.userName.textContent = "Developer";
+                setupTypewriterCycle(elements.userBio, 'A passionate developer creating amazing things.');
+            }
+
+            const reposData = await fetchGitHubAPI(`users/${GITHUB_USERNAME}/repos?sort=pushed&per_page=8`);
+            if (reposData) {
+                const excludedRepos = ['rajatkumar1011.github.io', 'python-gym'];
+                const filteredRepos = reposData
+                    .filter(repo => !excludedRepos.includes(repo.name.toLowerCase()))
+                    .slice(0, 6);
+
+                elements.projectsContainer.innerHTML = ''; // Clear loader before creating cards
+                createProjectCards(filteredRepos);
+            }
+            
+            lucide.createIcons();
+            setupScrollAnimations();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
