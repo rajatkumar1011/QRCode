@@ -1,1 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3e%3cpath d='M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm0 4h2v2h-2v-2zm-2-2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2z'/%3e%3c/svg%3e">
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QR Code generation library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- PDF generation library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease;
+        }
+        /* Canvas for animated backgrounds */
+        .background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place it behind all other content */
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .background-canvas.active {
+            opacity: 1;
+        }
+        /* Custom style for the QR code container to center the canvas element */
+        #qrcode-container canvas {
+            display: block;
+            margin: auto;
+            max-width: 100%; /* Ensures the QR code scales down on smaller screens */
+            height: auto !important; /* Maintains aspect ratio */
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
+        .animated-gradient-btn {
+            background: linear-gradient(-45deg, #ff7e5f, #feb47b, #86A8E7, #91EAE4);
+            background-size: 400% 400%;
+            animation: gradient-flow 10s ease infinite;
+            transition: filter 0.3s ease;
+        }
+        .animated-gradient-btn:hover {
+            filter: brightness(1.1);
+        }
+        @keyframes gradient-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Custom Caret & Focus Style --- */
+        .input:focus {
+            caret-color: #3B82F6; /* Modern blue caret */
+            border-color: #3b82f699; /* Softer border color on focus */
+            animation: breathing-glow 2s infinite ease-in-out;
+            outline: none; /* Ensure no default outline appears */
+        }
+
+        @keyframes breathing-glow {
+          0%, 100% {
+            box-shadow: 0 0 2px 0px rgba(59, 130, 246, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 6px 2px rgba(59, 130, 246, 0.5);
+          }
+        }
+        
+        /* --- Typing Animation Cursor --- */
+        #typing-cursor {
+            animation: blink-cursor 1s ease-in-out infinite;
+        }
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Light Theme */
+        body.theme-light { background-color: #ffffff; }
+        .theme-light .main-content { color: #000000; }
+        .theme-light .subtitle, .theme-light .footer-text { color: #4a5568; }
+        .theme-light .card { background-color: #f7fafc; border-color: #e2e8f0; }
+        .theme-light .input { background-color: #ffffff; border-color: #cbd5e0; color: #000000; }
+        .theme-light .input::placeholder { color: #a0aec0; }
+        .theme-light .social-icon { color: #4a5568; }
+        .theme-light .social-icon.github:hover { color: #000000; }
+        .theme-light .download-menu { background-color: #ffffff; color: #374151;}
+        .theme-light .download-menu a:hover { background-color: #f3f4f6; }
+
+
+        /* Dark Theme */
+        body.theme-dark { background-color: #000000; }
+        .theme-dark .main-content { color: #ffffff; }
+        .theme-dark .subtitle, .theme-dark .footer-text { color: #a0aec0; }
+        .theme-dark .card { background-color: #111111; border-color: #4a5568; }
+        .theme-dark .input { background-color: #1a202c; border-color: #4a5568; color: #ffffff; }
+        .theme-dark .input::placeholder { color: #718096; }
+        .theme-dark .social-icon { color: #a0aec0; }
+        .theme-dark .social-icon.github:hover { color: #ffffff; }
+        .theme-dark .download-menu { background-color: #1f2937; color: #d1d5db; }
+        .theme-dark .download-menu a:hover { background-color: #374151; }
+
+
+        /* Fancy Themes (Stars, Flow, Constellation) */
+        body.theme-fancy { background-color: #0a0a0a; }
+        .theme-fancy .main-content { color: #ffffff; }
+        .theme-fancy .subtitle, .theme-fancy .footer-text, .theme-fancy .social-icon { color: #ffffff; }
+        .theme-fancy .card { background-color: rgba(17, 17, 17, 0.3); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-color: rgba(128, 128, 128, 0.2); }
+        .theme-fancy .input { background-color: rgba(30, 30, 30, 0.5); border-color: rgba(128, 128, 128, 0.3); color: #ffffff; }
+        .theme-fancy .input::placeholder { color: #ffffff; }
+        .theme-fancy .social-icon.github:hover { opacity: 0.8; }
+        .theme-fancy .social-icon.linkedin:hover { color: #3b82f6; }
+        .theme-fancy .download-menu { background-color: rgba(31, 41, 55, 0.8); backdrop-filter: blur(5px); color: #d1d5db; }
+        .theme-fancy .download-menu a:hover { background-color: rgba(55, 65, 81, 0.8); }
+
+        /* Glow Theme */
+        body.theme-glow {
+            background: linear-gradient(-45deg, #ff7e5f, #feb47b, #86A8E7, #91EAE4);
+            background-size: 400% 400%;
+            animation: gradient-flow 10s ease infinite;
+        }
+        /* Glow Theme Overrides */
+        .theme-glow .main-content,
+        .theme-glow .subtitle,
+        .theme-glow .footer-text,
+        .theme-glow .social-icon {
+            color: #000000;
+        }
+        .theme-glow .card {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .theme-glow .input {
+            color: #000000;
+            border-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        .theme-glow .input::placeholder {
+            color: #333333;
+        }
+        .theme-glow .social-icon.github:hover {
+            opacity: 0.7;
+        }
+        .theme-glow .social-icon.linkedin:hover {
+            color: #0a66c2;
+        }
+
+    </style>
+</head>
+<body class="theme-fancy">
+    <!-- Canvases for the animated backgrounds -->
+    <canvas id="stars-canvas" class="background-canvas"></canvas>
+    <canvas id="flow-canvas" class="background-canvas"></canvas>
+    <canvas id="constellation-canvas" class="background-canvas"></canvas>
+    <canvas id="matrix-canvas" class="background-canvas"></canvas>
+    <canvas id="squares-canvas" class="background-canvas"></canvas>
+    <canvas id="bubbles-canvas" class="background-canvas"></canvas>
+
+    <!-- LOGO -->
+    <div class="fixed top-4 left-4 z-50">
+         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 main-content" fill="currentColor" viewBox="0 0 24 24" stroke="none">
+             <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm0 4h2v2h-2v-2zm-2-2h2v2h-2v-2zm4 0h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm2-4h2v2h-2v-2zm0 4h2v2h-2v-2z"/>
+        </svg>
+    </div>
+
+    <!-- THEME SWITCHER -->
+    <div class="fixed top-4 right-4 z-50">
+        <div class="relative" id="theme-switcher">
+            <button id="theme-toggle-btn" class="p-2 bg-gray-800/50 backdrop-blur-md rounded-full text-white hover:bg-gray-700/70">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+            </button>
+            <div id="theme-options" class="absolute right-0 mt-2 w-36 bg-gray-800/70 backdrop-blur-md rounded-lg shadow-xl overflow-hidden hidden">
+                <button data-theme="light" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Light</button>
+                <button data-theme="dark" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Dark</button>
+                <button data-theme="glow" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Glow</button>
+                <button data-theme="stars" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Stars</button>
+                <button data-theme="squares" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Squares</button>
+                <button data-theme="bubbles" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Bubbles</button>
+                <button data-theme="flow" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Flow Field</button>
+                <button data-theme="matrix" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Digital Rain</button>
+                <button data-theme="constellation" class="theme-btn w-full text-right px-4 py-2 text-sm text-white hover:bg-gray-700/70">Constellation</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="w-full max-w-md mx-auto p-6 md:p-8 z-10 flex flex-col min-h-screen justify-center">
+        <div>
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold main-content">QR Code Generator</h1>
+                <p class="subtitle mt-2 whitespace-nowrap overflow-hidden"><span id="animated-subtitle"></span><span id="typing-cursor">|</span></p>
+            </div>
+
+            <div class="card p-6 rounded-2xl shadow-2xl border">
+                <div class="space-y-4">
+                    <div>
+                        <label for="text-input" class="sr-only">Enter text or URL</label>
+                        <input type="text" id="text-input" placeholder="Enter text or a URL..." class="input w-full px-4 py-3 text-base border rounded-lg focus:outline-none transition-shadow">
+                    </div>
+                    <!-- Size Slider -->
+                    <div class="pt-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="size-slider" class="text-sm font-medium main-content">QR Code Size</label>
+                            <span id="size-value" class="text-sm font-mono subtitle">111px</span>
+                        </div>
+                        <input type="range" id="size-slider" min="100" max="369" value="111" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:bg-gray-700">
+                    </div>
+                    <button id="generate-btn" class="w-full animated-gradient-btn text-black font-bold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform transform active:scale-95 mt-4">
+                        Generate QR Code
+                    </button>
+                </div>
+                <div id="qr-wrapper" class="mt-6 text-center">
+                    <p id="error-message" class="text-red-400 text-sm mb-4 hidden"></p>
+                    <div id="qrcode-container" class="mx-auto bg-transparent rounded-lg flex items-center justify-center hidden">
+                         <div id="qrcode" class="p-2 bg-white rounded-md inline-block"></div>
+                    </div>
+                    <!-- Download Button Dropdown -->
+                    <div id="download-wrapper" class="relative inline-block text-left mt-4 hidden">
+                        <div>
+                            <button type="button" id="download-menu-btn" class="inline-flex justify-center w-full rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500">
+                                Download
+                                <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="download-options" class="download-menu origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="download-menu-btn">
+                            <div class="py-1" role="none">
+                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="png">PNG</a>
+                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="jpg">JPG / JPEG</a>
+                                <a href="#" class="download-format-btn block px-4 py-2 text-sm" role="menuitem" data-format="pdf">PDF</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <footer class="text-center mt-8 space-y-2">
+                <div class="flex justify-center items-center space-x-4">
+                    <a href="https://www.linkedin.com/comm/mynetwork/discovery-see-all?usecase=PEOPLE_FOLLOWS&followMember=rajatkumar7" target="_blank" rel="noopener noreferrer" class="social-icon linkedin" aria-label="LinkedIn Profile">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.71c-.966 0-1.75-.783-1.75-1.75s.784-1.75 1.75-1.75 1.75.783 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.71h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    </a>
+                    <a href="https://github.com/rajatkumar1011" target="_blank" rel="noopener noreferrer" class="social-icon github" aria-label="GitHub Profile">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.492.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" /></svg>
+                    </a>
+                </div>
+                <p class="text-sm footer-text">
+                    Made with ❤️ by Rajat Kumar
+                </p>
+                <p class="text-xs footer-text pt-2">
+                    Copyright © 2025 Rajat Kumar. All Rights Reserved.
+                </p>
+            </footer>
+        </div>
+    </main>
+
+    <script>
+        // --- Element Selection ---
+        const generateBtn = document.getElementById('generate-btn');
+        const textInput = document.getElementById('text-input');
+        const qrcodeContainer = document.getElementById('qrcode-container');
+        const qrcodeDiv = document.getElementById('qrcode');
+        const errorMessage = document.getElementById('error-message');
+        const sizeSlider = document.getElementById('size-slider');
+        const sizeValueDisplay = document.getElementById('size-value');
+        
+        // --- Download Logic ---
+        const downloadWrapper = document.getElementById('download-wrapper');
+        const downloadMenuBtn = document.getElementById('download-menu-btn');
+        const downloadOptions = document.getElementById('download-options');
+
+        const generateQRCode = () => {
+            const data = textInput.value.trim();
+            const qrSize = parseInt(sizeSlider.value, 10);
+
+            qrcodeContainer.classList.add('hidden');
+            downloadWrapper.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            
+            if (!data) {
+                errorMessage.textContent = 'Please enter text or a URL to generate a QR code.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            qrcodeDiv.innerHTML = ''; // Clear previous QR code before generating a new one
+
+            const errorCorrectionLevels = ['L', 'M', 'Q', 'H'];
+            const correctLevelMap = {
+                'L': QRCode.CorrectLevel.L,
+                'M': QRCode.CorrectLevel.M,
+                'Q': QRCode.CorrectLevel.Q,
+                'H': QRCode.CorrectLevel.H,
+            };
+
+            let success = false;
+            for (const level of errorCorrectionLevels) {
+                try {
+                    new QRCode(qrcodeDiv, {
+                        text: data,
+                        width: qrSize,
+                        height: qrSize,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: correctLevelMap[level]
+                    });
+                    success = true;
+                    console.log(`Successfully generated QR Code with error correction level: ${level}`);
+                    break; // Exit loop on first successful generation
+                } catch (error) {
+                    console.warn(`Failed to generate with level ${level}. Trying next level.`);
+                    qrcodeDiv.innerHTML = ''; // Clean up failed attempt
+                }
+            }
+
+            if (success) {
+                // Adjust container size to fit the new QR code
+                qrcodeContainer.classList.remove('hidden');
+                qrcodeContainer.classList.add('fade-in');
+                downloadWrapper.classList.remove('hidden');
+                downloadWrapper.classList.add('fade-in');
+            } else {
+                console.error("QR Code generation failed at all error correction levels.");
+                errorMessage.textContent = 'Could not generate QR code. The input is too long.';
+                errorMessage.classList.remove('hidden');
+            }
+        };
+
+        generateBtn.addEventListener('click', generateQRCode);
+        textInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') generateQRCode();
+        });
+        
+        sizeSlider.addEventListener('input', () => {
+            sizeValueDisplay.textContent = `${sizeSlider.value}px`;
+        });
+
+        const downloadQR = (format) => {
+            const canvas = qrcodeDiv.querySelector('canvas');
+            if (!canvas) return;
+
+            const padding = 24; // Creates a 12px border on each side
+            const borderRadius = 12;
+
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCanvas.width = canvas.width + padding;
+            tempCanvas.height = canvas.height + padding;
+
+            // Draw the rounded white background
+            tempCtx.fillStyle = '#ffffff';
+            tempCtx.beginPath();
+            tempCtx.moveTo(borderRadius, 0);
+            tempCtx.lineTo(tempCanvas.width - borderRadius, 0);
+            tempCtx.quadraticCurveTo(tempCanvas.width, 0, tempCanvas.width, borderRadius);
+            tempCtx.lineTo(tempCanvas.width, tempCanvas.height - borderRadius);
+            tempCtx.quadraticCurveTo(tempCanvas.width, tempCanvas.height, tempCanvas.width - borderRadius, tempCanvas.height);
+            tempCtx.lineTo(borderRadius, tempCanvas.height);
+            tempCtx.quadraticCurveTo(0, tempCanvas.height, 0, tempCanvas.height - borderRadius);
+            tempCtx.lineTo(0, borderRadius);
+            tempCtx.quadraticCurveTo(0, 0, borderRadius, 0);
+            tempCtx.closePath();
+            tempCtx.fill();
+            
+            // Draw the QR code onto the new canvas
+            tempCtx.drawImage(canvas, padding / 2, padding / 2);
+
+            const link = document.createElement('a');
+
+            switch (format) {
+                case 'png':
+                    link.download = 'qrcode.png';
+                    link.href = tempCanvas.toDataURL('image/png');
+                    link.click();
+                    break;
+                case 'jpg':
+                    link.download = 'qrcode.jpeg';
+                    link.href = tempCanvas.toDataURL('image/jpeg', 0.95);
+                    link.click();
+                    break;
+                case 'pdf':
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                    const imgData = tempCanvas.toDataURL('image/png');
+                    const qrSizeMM = 60 * (tempCanvas.width / 224); // Scale PDF size based on selected size
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const x = (pdfWidth - qrSizeMM) / 2;
+                    pdf.addImage(imgData, 'PNG', x, 20, qrSizeMM, qrSizeMM);
+                    pdf.save('qrcode.pdf');
+                    break;
+            }
+        };
+
+        downloadMenuBtn.addEventListener('click', () => {
+            downloadOptions.classList.toggle('hidden');
+        });
+
+        downloadOptions.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (e.target.classList.contains('download-format-btn')) {
+                const format = e.target.dataset.format;
+                downloadQR(format);
+                downloadOptions.classList.add('hidden'); 
+            }
+        });
+
+
+        // --- THEME SWITCHER LOGIC ---
+        const themeToggleButton = document.getElementById('theme-toggle-btn');
+        const themeOptions = document.getElementById('theme-options');
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        const canvases = {
+            stars: document.getElementById('stars-canvas'),
+            flow: document.getElementById('flow-canvas'),
+            constellation: document.getElementById('constellation-canvas'),
+            matrix: document.getElementById('matrix-canvas'),
+            squares: document.getElementById('squares-canvas'),
+            bubbles: document.getElementById('bubbles-canvas')
+        };
+
+        let activeAnimationId = null;
+
+        const stopAllAnimations = () => {
+            if (activeAnimationId) {
+                cancelAnimationFrame(activeAnimationId);
+                activeAnimationId = null;
+            }
+            Object.values(canvases).forEach(c => {
+                 const ctx = c.getContext('2d');
+                 ctx.clearRect(0, 0, c.width, c.height);
+                 c.classList.remove('active');
+            });
+        };
+
+        const setTheme = (theme) => {
+            document.body.className = ''; // Clear all classes
+            stopAllAnimations();
+
+            if (theme === 'light') {
+                document.body.classList.add('theme-light');
+            } else if (theme === 'dark') {
+                document.body.classList.add('theme-dark');
+            } else {
+                document.body.classList.add('theme-fancy');
+                if (theme === 'glow') {
+                    document.body.classList.add('theme-glow');
+                } else if (theme === 'stars') {
+                    canvases.stars.classList.add('active');
+                    startStarsAnimation();
+                } else if (theme === 'flow') {
+                    canvases.flow.classList.add('active');
+                    startFlowAnimation();
+                } else if (theme === 'constellation') {
+                    canvases.constellation.classList.add('active');
+                    startConstellationAnimation();
+                } else if (theme === 'matrix') {
+                    canvases.matrix.classList.add('active');
+                    startMatrixAnimation();
+                } else if (theme === 'squares') {
+                    canvases.squares.classList.add('active');
+                    startSquaresAnimation();
+                } else if (theme === 'bubbles') {
+                    canvases.bubbles.classList.add('active');
+                    startBubblesAnimation();
+                }
+            }
+            themeOptions.classList.add('hidden');
+        };
+
+        themeToggleButton.addEventListener('click', () => {
+            themeOptions.classList.toggle('hidden');
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('theme-switcher').contains(e.target)) {
+                 themeOptions.classList.add('hidden');
+            }
+            if (!document.getElementById('download-wrapper').contains(e.target)) {
+                 downloadOptions.classList.add('hidden');
+            }
+        });
+
+        themeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const theme = button.getAttribute('data-theme');
+                setTheme(theme);
+            });
+        });
+
+        // --- BACKGROUND ANIMATION LOGIC ---
+        const resizeAllCanvases = () => {
+             Object.values(canvases).forEach(c => {
+                 c.width = window.innerWidth;
+                 c.height = window.innerHeight;
+             });
+        };
+        
+        window.addEventListener('resize', () => {
+            resizeAllCanvases();
+            if (document.body.classList.contains('theme-fancy')) {
+                if (canvases.stars.classList.contains('active')) { createStars(); }
+                if (canvases.flow.classList.contains('active')) { createParticles(); }
+                if (canvases.constellation.classList.contains('active')) { createConstellationParticles(); }
+                if (canvases.matrix.classList.contains('active')) { setupMatrix(); }
+                if (canvases.bubbles.classList.contains('active')) { createBubbles(); }
+                // The 'squares' animation doesn't need a reset function as it's purely generative
+            }
+        });
+        resizeAllCanvases();
+        
+        // --- Aurora Animation --- - REMOVED
+
+        // --- Stars Animation ---
+        let stars = [];
+        const starsCtx = canvases.stars.getContext('2d');
+        const createStars = () => { stars = []; for (let i = 0; i < 200; i++) { stars.push({ x: Math.random() * canvases.stars.width, y: Math.random() * canvases.stars.height, radius: Math.random() * 1.5, alpha: Math.random(), dAlpha: (Math.random() * 0.02) - 0.01 }); } };
+        const animateStars = () => { starsCtx.clearRect(0, 0, canvases.stars.width, canvases.stars.height); stars.forEach(s => { s.alpha += s.dAlpha; if (s.alpha <= 0 || s.alpha >= 1) s.dAlpha *= -1; starsCtx.beginPath(); starsCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2); starsCtx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`; starsCtx.fill(); }); activeAnimationId = requestAnimationFrame(animateStars); };
+        const startStarsAnimation = () => { createStars(); animateStars(); };
+        
+        // --- Flow Field Animation ---
+        let particles = [];
+        const flowCtx = canvases.flow.getContext('2d');
+        const createParticles = () => { 
+            particles = []; 
+            // Reduced particle count for a cleaner look, scales with screen width
+            const particleCount = Math.floor(canvases.flow.width / 3.5);
+            for (let i = 0; i < particleCount; i++) { 
+                particles.push({ 
+                    x: Math.random() * canvases.flow.width, 
+                    y: Math.random() * canvases.flow.height, 
+                    speed: Math.random() * 0.4 + 0.1, // Slightly slower speed
+                    radius: Math.random() * 1.2 + 0.8 // Particles are now circles with varying radii
+                }); 
+            } 
+        };
+        const animateFlow = (timestamp) => {
+            const time = timestamp * 0.0002; // Slower time evolution for a more gentle flow
+            // Faster fade-out for shorter, sleeker trails
+            flowCtx.fillStyle = 'rgba(10, 10, 10, 0.08)'; 
+            flowCtx.fillRect(0, 0, canvases.flow.width, canvases.flow.height);
+            flowCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            particles.forEach(p => {
+                // Smoother angle calculation for more graceful curves
+                const angle = (Math.cos(p.y * 0.004) + Math.sin(p.x * 0.004 + time)) * 2;
+                p.x += Math.cos(angle) * p.speed; p.y += Math.sin(angle) * p.speed;
+
+                // Improved wrap-around logic for seamless looping
+                if (p.x < -10) p.x = canvases.flow.width + 10; 
+                if (p.x > canvases.flow.width + 10) p.x = -10;
+                if (p.y < -10) p.y = canvases.flow.height + 10; 
+                if (p.y > canvases.flow.height + 10) p.y = -10;
+                
+                // Draw particles as circles instead of squares for a softer look
+                flowCtx.beginPath();
+                flowCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                flowCtx.fill();
+            });
+            activeAnimationId = requestAnimationFrame(animateFlow);
+        };
+        const startFlowAnimation = () => { createParticles(); flowCtx.fillStyle = 'black'; flowCtx.fillRect(0, 0, canvases.flow.width, canvases.flow.height); animateFlow(0); };
+
+        // --- Constellation Animation ---
+        let constellationParticles = [];
+        const constellationCtx = canvases.constellation.getContext('2d');
+        const createConstellationParticles = () => {
+            const particleCount = Math.floor(canvases.constellation.width / 15);
+            constellationParticles = [];
+            for (let i = 0; i < particleCount; i++) {
+                constellationParticles.push({
+                    x: Math.random() * canvases.constellation.width,
+                    y: Math.random() * canvases.constellation.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    radius: Math.random() * 1.5 + 1
+                });
+            }
+        };
+        const animateConstellation = () => {
+            constellationCtx.clearRect(0, 0, canvases.constellation.width, canvases.constellation.height);
+            constellationParticles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > canvases.constellation.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvases.constellation.height) p.vy *= -1;
+                constellationCtx.beginPath();
+                constellationCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                constellationCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                constellationCtx.fill();
+            });
+
+            constellationCtx.beginPath();
+            for (let i = 0; i < constellationParticles.length; i++) {
+                for (let j = i; j < constellationParticles.length; j++) {
+                    const dist = Math.sqrt(Math.pow(constellationParticles[i].x - constellationParticles[j].x, 2) + Math.pow(constellationParticles[i].y - constellationParticles[j].y, 2));
+                    if (dist < 100) {
+                        constellationCtx.moveTo(constellationParticles[i].x, constellationParticles[i].y);
+                        constellationCtx.lineTo(constellationParticles[j].x, constellationParticles[j].y);
+                    }
+                }
+            }
+            constellationCtx.lineWidth = 0.5;
+            constellationCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            constellationCtx.stroke();
+
+            activeAnimationId = requestAnimationFrame(animateConstellation);
+        };
+        const startConstellationAnimation = () => {
+            createConstellationParticles();
+            animateConstellation();
+        };
+
+        // --- Digital Rain (Matrix) Animation ---
+        const matrixCtx = canvases.matrix.getContext('2d');
+        let drops = [];
+        let fontSize = 16;
+        let columns = 0;
+
+        const setupMatrix = () => {
+            columns = Math.floor(canvases.matrix.width / fontSize);
+            drops = [];
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.floor(Math.random() * canvases.matrix.height / fontSize);
+            }
+        };
+
+        const animateMatrix = () => {
+            matrixCtx.fillStyle = 'rgba(10, 10, 10, 0.05)';
+            matrixCtx.fillRect(0, 0, canvases.matrix.width, canvases.matrix.height);
+            
+            matrixCtx.fillStyle = '#00f400'; // Classic matrix green
+            matrixCtx.font = `${fontSize}px monospace`;
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = Math.random() < 0.5 ? '0' : '1';
+                matrixCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvases.matrix.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i] += 0.5;
+            }
+            activeAnimationId = requestAnimationFrame(animateMatrix);
+        };
+
+        const startMatrixAnimation = () => {
+            setupMatrix();
+            animateMatrix();
+        };
+        
+        // --- Squares Animation ---
+        const squaresCtx = canvases.squares.getContext('2d');
+        let squareParticles = [];
+
+        const animateSquares = () => {
+            squaresCtx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+            squaresCtx.fillRect(0, 0, canvases.squares.width, canvases.squares.height);
+
+            // Add a new square occasionally
+            if (Math.random() > 0.96) {
+                squareParticles.push({
+                    x: Math.random() * canvases.squares.width,
+                    y: Math.random() * canvases.squares.height,
+                    size: 0,
+                    maxSize: Math.random() * 100 + 50,
+                    opacity: 1,
+                    speed: Math.random() * 0.5 + 0.2
+                });
+            }
+
+            // Animate and draw squares
+            for (let i = squareParticles.length - 1; i >= 0; i--) {
+                const p = squareParticles[i];
+                p.size += p.speed;
+                p.opacity = 1 - (p.size / p.maxSize);
+
+                if (p.opacity <= 0) {
+                    squareParticles.splice(i, 1);
+                } else {
+                    squaresCtx.strokeStyle = `rgba(255, 255, 255, ${p.opacity})`;
+                    squaresCtx.lineWidth = 1.5;
+                    squaresCtx.strokeRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+                }
+            }
+
+            activeAnimationId = requestAnimationFrame(animateSquares);
+        };
+        
+        const startSquaresAnimation = () => {
+            squareParticles = [];
+            animateSquares();
+        };
+
+        // --- Bubbles Animation ---
+        const bubblesCtx = canvases.bubbles.getContext('2d');
+        let bubbleParticles = [];
+
+        const createBubbles = () => {
+            const bubbleCount = Math.floor(canvases.bubbles.width / 35);
+            bubbleParticles = [];
+            for (let i = 0; i < bubbleCount; i++) {
+                bubbleParticles.push({
+                    x: Math.random() * canvases.bubbles.width,
+                    y: canvases.bubbles.height + Math.random() * 100, // Start below the screen
+                    radius: Math.random() * 20 + 10, // Varying sizes
+                    vx: (Math.random() - 0.5) * 0.5, // Gentle side-to-side drift
+                    vy: -(Math.random() * 1 + 0.5), // Upward speed
+                    opacity: Math.random() * 0.4 + 0.1
+                });
+            }
+        };
+
+        const animateBubbles = () => {
+            bubblesCtx.clearRect(0, 0, canvases.bubbles.width, canvases.bubbles.height);
+            
+            bubbleParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                // Reset bubble when it goes off screen
+                if (p.y < -p.radius * 2) {
+                    p.y = canvases.bubbles.height + p.radius;
+                    p.x = Math.random() * canvases.bubbles.width;
+                }
+                if (p.x < -p.radius || p.x > canvases.bubbles.width + p.radius) {
+                    p.vx *= -1; // Bounce off sides
+                }
+
+                bubblesCtx.beginPath();
+                bubblesCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                
+                // Create a glossy effect with a radial gradient
+                const gradient = bubblesCtx.createRadialGradient(p.x - p.radius * 0.3, p.y - p.radius * 0.3, 0, p.x, p.y, p.radius);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${p.opacity * 0.8})`);
+                gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+                
+                bubblesCtx.fillStyle = gradient;
+                bubblesCtx.fill();
+            });
+
+            activeAnimationId = requestAnimationFrame(animateBubbles);
+        };
+
+        const startBubblesAnimation = () => {
+            createBubbles();
+            animateBubbles();
+        };
+        
+        // --- TYPEWRITER ANIMATION ---
+        const setupTypewriter = () => {
+            const subtitleEl = document.getElementById('animated-subtitle');
+            if (!subtitleEl) return;
+            const text = "Simply enter text or a URL to create your QR code.";
+            const typeSpeed = 80;
+            const eraseSpeed = 30;
+            const pauseEnd = 7890;
+            const pauseStart = 1500;
+
+            let charIndex = 0;
+            let isDeleting = false;
+
+            const loop = () => {
+                const currentText = text;
+                let timeoutSpeed = typeSpeed;
+
+                if (isDeleting) {
+                    timeoutSpeed = eraseSpeed;
+                    subtitleEl.textContent = currentText.substring(0, charIndex - 1);
+                    charIndex--;
+                } else {
+                    subtitleEl.textContent = currentText.substring(0, charIndex + 1);
+                    charIndex++;
+                }
+
+                if (!isDeleting && charIndex === currentText.length) {
+                    // Pause at end
+                    timeoutSpeed = pauseEnd;
+                    isDeleting = true;
+                } else if (isDeleting && charIndex === 0) {
+                    // Pause at start
+                    timeoutSpeed = pauseStart;
+                    isDeleting = false;
+                }
+
+                setTimeout(loop, timeoutSpeed);
+            };
+            loop();
+        };
+
+
+        // --- Initial Load ---
+        setTheme('dark'); // Default theme
+        setupTypewriter();
+    </script>
+</body>
+</html>
